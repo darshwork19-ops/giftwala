@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * GIFTWALA design tokens.
+ * Every colour below becomes a Tailwind utility, e.g. `bg-ivory`,
+ * `text-burgundy`, `border-linen`. Use these instead of raw hex values.
+ */
+@theme {
+  /* Brand palette */
+  --color-ivory: #f7f1e8; /* page background */
+  --color-burgundy: #800020; /* brand, primary actions, key links */
+  --color-burgundy-hover: #600018; /* primary button hover */
+  --color-white: #ffffff; /* cards, inputs, menus */
+  --color-charcoal: #292522; /* headings and body text */
+  --color-terracotta: #d9a477; /* decorative accents only — low contrast */
+  --color-linen: #e9ded1; /* alternate sections, borders, dividers */
+  --color-blush: #f1e3e5; /* selected states, soft highlights */
+  --color-sage: #496653; /* success and completed states */
+  --color-berry: #6d293a; /* errors and warnings, sparingly */
+
+  /* Derived: secondary text. 6.3:1 contrast on ivory. */
+  --color-muted: #5e5650;
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  /* Radius scale — kept small for an editorial feel */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+
+  /* Soft, warm shadow for elevated surfaces */
+  --shadow-soft: 0 1px 2px rgb(41 37 34 / 0.04), 0 8px 24px -12px rgb(41 37 34 / 0.12);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Consistent page width and side gutters */
+@utility page-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 3rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Small uppercase label used above section headings */
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-burgundy);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-ivory);
+    color: var(--color-charcoal);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-blush);
+    color: var(--color-charcoal);
+  }
+
+  /* Visible keyboard focus everywhere */
+  :focus-visible {
+    outline: 2px solid var(--color-burgundy);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

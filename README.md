@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GIFTWALA
 
-## Getting Started
+A curated B2C gifting marketplace that helps people find thoughtful, personal
+gifts from independent makers. Built as a solo hackathon project with Next.js
+(App Router), React, TypeScript and Tailwind CSS v4.
 
-First, run the development server:
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script              | What it does                         |
+| ------------------- | ------------------------------------ |
+| `npm run dev`       | Development server with hot reload   |
+| `npm run lint`      | ESLint (Next.js + TypeScript rules)  |
+| `npm run typecheck` | TypeScript check without emitting    |
+| `npm run build`     | Production build                     |
+| `npm run start`     | Serve the production build           |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/
+  app/                 Routes (App Router). layout.tsx holds header/footer.
+  components/
+    layout/            Announcement bar, header, footer, wordmark
+    home/              Homepage sections
+    product/           Product card
+    ui/                Buttons, icons, image with fallback, section heading
+  data/                Sample catalogue: products, makers, taxonomy
+  lib/                 Types, catalogue helpers, routes, formatting, images
+```
 
-To learn more about Next.js, take a look at the following resources:
+- **Design tokens** live in `src/app/globals.css` (`@theme`). Use utilities
+  such as `bg-ivory`, `text-burgundy`, `border-linen` rather than raw hex.
+- **Fonts:** Fraunces (serif headlines) and Geist (sans body), via `next/font`.
+- **Routes** are centralised in `src/lib/routes.ts`.
+- **Catalogue access** goes through `src/lib/catalogue.ts`, so the local data
+  can later be replaced with a database without changing the UI.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Sample data — please read
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All makers, products, prices, stock levels and processing times in
+`src/data/` are **fictional demonstration records**. They are not real
+businesses, partnerships or verified sellers.
 
-## Deploy on Vercel
+Photography is free-licence stock imagery from [Unsplash](https://unsplash.com),
+loaded from Unsplash's CDN. Photos were chosen to match each product, but they
+do not show the exact item described.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Not connected
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+There is no backend, database, payment provider or AI model connected.
+Recommendations, cart and checkout (when built) run locally and are labelled as
+demo functionality in the interface.
+
+## Build status
+
+Phases 1–2 of the build plan are done: design system, branding, header,
+footer and homepage. Pages for the catalogue, product details, makers, Gift
+Finder, favourites, cart and checkout are next; until then those links show
+the branded "page not found" screen.
