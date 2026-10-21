@@ -88,7 +88,33 @@ The pipeline lives in `src/lib/finder/engine.ts`:
 | --- | --- | --- | --- |
 | GIFTWALA listing | A record in the demo catalogue (`src/data/products.ts`) | Sample price; delivery estimated only with area/PIN + date | Request this gift |
 | Gift idea | A concept (`src/data/gift-ideas.ts`) | None shown | "Before you buy, check" tips |
-| External retailer listing | Not implemented: no verified retailer feeds exist | — | — |
+| Online-shop product | A real product on another shop's site (`src/data/external-products.ts`), checked by hand | Price as checked on the stated date; stock and delivery handled by the shop | "View on <shop>" link |
+
+### Things you can buy vs gift ideas
+
+The Gift Finder has two views, chosen in the describe box ("Show me") and
+switchable on the results page:
+
+- **Things you can buy:** GIFTWALA listings, online-shop products and a
+  separate "Popular gifts" row (well-loved catalogue gifts within the same
+  budget/date/area, labelled as not matched to the description).
+- **Gift ideas:** idea cards only.
+
+### Online-shop products
+
+Collected by hand on 21 Oct 2026 from The Drunken Mug (upcycled glassware) and
+Decathlon India (cricket, badminton, trekking, yoga). There is no feed,
+affiliate link or partnership: prices and stock can change, so cards show the
+"checked on" date and link to the shop. Product photos are the shops' own;
+confirm permission with each shop before launch. Liquor-branded barware is
+only suggested when the brief mentions drinks and never for a child.
+
+### Gift box
+
+`/gift-box` lets shoppers combine 2–6 GIFTWALA catalogue gifts into one box
+(`src/lib/gift-box.ts`). A box can only go where every maker delivers, and its
+earliest arrival is the slowest item plus one demo packing day. Online-shop
+products can't be boxed because they ship from different shops.
 
 ## Tests
 

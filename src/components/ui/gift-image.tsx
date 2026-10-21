@@ -28,7 +28,7 @@ export function GiftImage({ alt, className = "", ...props }: Omit<ImageProps, "f
       {...props}
       alt={alt}
       fill
-      className={`object-cover ${className}`}
+      className={`${className.includes("object-contain") ? "" : "object-cover"} ${className}`}
       onError={() => setFailed(true)}
     />
   );

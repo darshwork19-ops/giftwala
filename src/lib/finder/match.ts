@@ -1,3 +1,4 @@
+import { externalProducts, type ExternalProduct } from "@/data/external-products";
 import { giftIdeas, type GiftIdea } from "@/data/gift-ideas";
 import { interests as interestList, occasions } from "@/data/taxonomy";
 import { getAllProducts, getMaker, isPersonalisable } from "@/lib/catalogue";
@@ -23,7 +24,7 @@ export function earliestArrival(product: Product, today: string): string {
 }
 
 /** Tag words and whole tags, stemmed: "k-drama" → "k-drama", "drama". */
-export function tagTerms(product: Product): Set<string> {
+export function tagTerms(product: Pick<Product, "tags">): Set<string> {
   const terms = new Set<string>();
   for (const tag of product.tags) {
     const whole = stem(tag);
@@ -40,6 +41,7 @@ export function tagTerms(product: Product): Set<string> {
 export const KNOWN_SUBJECTS: Set<string> = new Set([
   ...getAllProducts().flatMap((p) => [...tagTerms(p)]),
   ...giftIdeas.flatMap((i) => i.triggers.map(stem)),
+  ...externalProducts.flatMap((p) => [...tagTerms(p)]),
 ]);
 
 export type ExclusionReason = "budget" | "date" | "destination";
@@ -178,4 +180,66 @@ export function describeExclusions(excluded: Record<ExclusionReason, number>, fa
     );
   }
   return bits.length ? `Left out ${bits.join(", ")}.` : undefined;
+}
+
+// ── Online-shop products ───────────────────────────────────────────────────
+
+const DRINK_WORDS = new Set(
+  "bar barware drink drinks drinking whisky whiskey rum beer wine gin vodka cocktail cocktails old monk jameson heineken party host pub".split(" "),
+);
+const CHILD_WORDS = /\b(kid|kids|child|children|son|daughter|baby|toddler|teen|teenager|school|nephew|niece)\b/;
+
+export interface ExternalMatch {
+  product: ExternalProduct;
+  matched: string[];
+  score: number;
+}
+
+/**
+ * Products from online shops that match the brief's subject and budget.
+ * Liquor-branded barware needs a drink-related word in the brief and is never
+ * suggested when the recipient sounds under 18.
+ */
+export function matchExternal(facts: BriefFacts, briefText: string, limit = 6): ExternalMatch[] {
+  const minor = (facts.age !== undefined && facts.age < 18) || CHILD_WORDS.test(briefText.toLowerCase());
+  return externalProducts
+    .map((product) => {
+      const terms = tagTerms(product);
+      const hits = facts.keywords.filter((w) => terms.has(stem(w)));
+      const matched = hits.filter((w) => !hits.some((o) => o !== w && o.includes("-") && o.split("-").includes(w)));
+      let score = matched.length * 5;
+      if (facts.occasion && product.occasions.includes(facts.occasion)) score += 2;
+      return { product, matched, score };
+    })
+    .filter(({ product, matched }) => {
+      if (matched.length === 0) return false;
+      if (facts.budgetMax !== undefined && product.price > facts.budgetMax) return false;
+      if (facts.budgetMin !== undefined && product.price < facts.budgetMin) return false;
+      if (product.adultsOnly && (minor || !matched.some((w) => DRINK_WORDS.has(stem(w))))) return false;
+      return true;
+    })
+    .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
+    .slice(0, limit);
+}
+
+
+/**
+ * Well-loved catalogue gifts for the separate "Popular gifts" section. They
+ * still respect budget, date and destination, and never count as matches.
+ */
+export function popularGifts(facts: BriefFacts, today: string, excludeIds: string[], limit = 4): Candidate[] {
+  const out: Candidate[] = [];
+  for (const product of getAllProducts()) {
+    if (out.length >= limit) break;
+    if (!product.featured || excludeIds.includes(product.id)) continue;
+    const maker = getMaker(product.makerId);
+    const arrival = earliestArrival(product, today);
+    const service = facts.destination ? serviceability(facts.destination, maker.deliveryZones) : undefined;
+    if (facts.budgetMax !== undefined && product.price > facts.budgetMax) continue;
+    if (facts.budgetMin !== undefined && product.price < facts.budgetMin) continue;
+    if (facts.date && arrival > facts.date.iso) continue;
+    if (service === "does-not-serve") continue;
+    out.push({ product, arrival, serviceability: service, score: 0, matched: [], strong: false });
+  }
+  return out;
 }

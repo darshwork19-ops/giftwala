@@ -46,6 +46,23 @@ export interface ListingCard {
   arrival: string;
 }
 
+/** A real product on another shop's website. GIFTWALA doesn't sell it. */
+export interface ExternalCard {
+  kind: "external";
+  id: string;
+  name: string;
+  shop: { name: string; url: string };
+  url: string;
+  price: number;
+  compareAt?: number;
+  priceCheckedOn: string;
+  image: { src: string; alt: string };
+  category: string;
+  summary: string;
+  reason: string;
+  adultsOnly: boolean;
+}
+
 /** A gift concept with no seller, price, stock or link behind it. */
 export interface IdeaCard {
   kind: "idea";
@@ -76,6 +93,10 @@ export interface FinderResponse {
     interests: string[];
   };
   listings: ListingCard[];
+  /** Matching products on other shops' websites (bought there). */
+  external: ExternalCard[];
+  /** Well-loved catalogue gifts within the same budget/date/destination, shown separately. */
+  popular: ListingCard[];
   ideas: IdeaCard[];
   /** Explains what delivery checks were (and weren't) possible. */
   deliveryNote?: string;

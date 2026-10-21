@@ -9,6 +9,7 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: routes.giftFinder, label: "Gift Finder" },
       { href: routes.gifts, label: "All gifts" },
+      { href: routes.giftBox, label: "Build a gift box" },
       { href: routes.personalisedGifts, label: "Personalised gifts" },
       { href: routes.requests, label: "Your order requests" },
     ],

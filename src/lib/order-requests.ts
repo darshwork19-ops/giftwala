@@ -20,6 +20,8 @@ export interface OrderRequest {
   makerName: string;
   basePrice: number;
   personalisation: { label: string; value: string; extraCost: number }[];
+  /** Present for a mix-and-match gift box: every item packed together. */
+  items?: { name: string; maker: string; price: number }[];
   total: number;
   deliverBy: string;
   area: string;
@@ -106,7 +108,9 @@ export function orderMessage(r: OrderRequest): string {
   const lines = [
     `New GIFTWALA order request ${r.ref}`,
     "",
-    `Gift: ${r.productName} (${formatPrice(r.basePrice)})`,
+    ...(r.items
+      ? [`Gift box with ${r.items.length} items:`, ...r.items.map((i) => `- ${i.name} by ${i.maker} (${formatPrice(i.price)})`)]
+      : [`Gift: ${r.productName} (${formatPrice(r.basePrice)})`]),
     ...r.personalisation.map(
       (p) => `${p.label}: ${p.value}${p.extraCost ? ` (+${formatPrice(p.extraCost)})` : ""}`,
     ),

@@ -47,6 +47,10 @@ export function Hero() {
             Rather browse?{" "}
             <ButtonLink href={routes.gifts} variant="ghost" className="align-baseline">
               Explore gifts
+            </ButtonLink>{" "}
+            or{" "}
+            <ButtonLink href={routes.giftBox} variant="ghost" className="align-baseline">
+              mix and match a gift box
             </ButtonLink>
           </p>
         </div>

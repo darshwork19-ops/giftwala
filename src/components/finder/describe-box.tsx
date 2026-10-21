@@ -11,8 +11,11 @@ const EXAMPLES = [
   "My sister is studying for CA Final, loves badminton and cars",
 ];
 
+export type FinderView = "buy" | "ideas";
+
 interface DescribeBoxProps {
   defaultValue?: string;
+  defaultView?: FinderView;
   /** Visual size: the homepage hero uses "lg". */
   size?: "md" | "lg";
 }
@@ -21,7 +24,7 @@ interface DescribeBoxProps {
  * The first step of the Gift Finder: one free-text description. Submits to
  * /gift-finder?brief=… so results can be shared, refreshed and revisited.
  */
-export function DescribeBox({ defaultValue = "", size = "md" }: DescribeBoxProps) {
+export function DescribeBox({ defaultValue = "", defaultView = "buy", size = "md" }: DescribeBoxProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hintId = useId();
 
@@ -57,6 +60,26 @@ export function DescribeBox({ defaultValue = "", size = "md" }: DescribeBoxProps
         placeholder={EXAMPLES[0]}
         className="mt-3 w-full resize-none rounded-md border border-linen bg-ivory/40 px-3 py-2.5 text-[0.95rem] leading-relaxed placeholder:text-muted/70 focus:border-burgundy focus:bg-white"
       />
+      <fieldset className="mt-3">
+        <legend className="mb-1.5 text-xs font-medium">Show me</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              { id: "buy", label: "Things I can buy", hint: "Real products with a price" },
+              { id: "ideas", label: "Gift ideas", hint: "Inspiration to shop around" },
+            ] as const
+          ).map((option) => (
+            <label
+              key={option.id}
+              className="cursor-pointer rounded-md border border-linen bg-white px-3 py-2 has-[:checked]:border-burgundy has-[:checked]:bg-blush has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-burgundy"
+            >
+              <input type="radio" name="view" value={option.id} defaultChecked={defaultView === option.id} className="sr-only" />
+              <span className="block text-sm font-medium">{option.label}</span>
+              <span className="block text-xs text-muted">{option.hint}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2" aria-label="Example descriptions">
           {EXAMPLES.slice(1).map((example) => (

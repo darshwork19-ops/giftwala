@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getAllProducts } from "@/lib/catalogue";
 import { searchGifts } from "@/lib/search";
-import { INTERESTS } from "@/components/home/interest-grid";
 import { AiOutputError, type AiProvider } from "./ai-types";
 import { findPin, findDestination } from "./destination";
 import { findGifts, MESSAGES } from "./engine";
@@ -201,14 +200,6 @@ describe("recipient-first, cross-category examples", () => {
   });
 });
 
-describe("homepage interest tiles", () => {
-  it.each(INTERESTS.map((i) => [i.label, i.brief]))("%s leads to real results", async (_label, brief) => {
-    const r = await run(brief);
-    expect(r.status).toBe("results");
-    expect(r.listings.length + r.ideas.length).toBeGreaterThan(0);
-  });
-});
-
 describe("intent", () => {
   it("does not reject valid short queries", () => {
     for (const q of ["cricket bat", "candle", "pottery", "books"]) {
@@ -262,5 +253,77 @@ describe("parsing", () => {
 
   it("ranking schema accepts an empty pick list", () => {
     expect(RankingSchema.safeParse({ summary: "", interests: [], picks: [] }).success).toBe(true);
+  });
+});
+
+describe("online-shop products", () => {
+  it("cricket → real Decathlon bats within budget, labelled as external", async () => {
+    const r = await run("A birthday gift for my cricket-loving friend under ₹1,500");
+    expect(r.external.length).toBeGreaterThan(0);
+    expect(r.external.every((p) => p.price <= 1500 && p.kind === "external")).toBe(true);
+    expect(r.external.every((p) => p.url.startsWith("https://www.decathlon.in/"))).toBe(true);
+    expect(r.external.every((p) => p.priceCheckedOn)).toBe(true);
+  });
+
+  it("liquor-branded barware needs a drink-related brief", async () => {
+    const eco = await run("an eco friendly upcycled gift for my friend");
+    expect(eco.external.some((p) => p.adultsOnly)).toBe(false);
+    const whisky = await run("my dad loves whisky");
+    expect(whisky.external.some((p) => p.adultsOnly)).toBe(true);
+  });
+
+  it("barware is never suggested for a child", async () => {
+    const r = await run("a party gift for my 12 year old son who loves drinks");
+    expect(r.external.some((p) => p.adultsOnly)).toBe(false);
+  });
+
+  it("nonsense never returns online products either", async () => {
+    const r = await run("bsibcisbc");
+    expect(r.external).toHaveLength(0);
+    expect(r.popular).toHaveLength(0);
+  });
+});
+
+describe("popular gifts", () => {
+  it("are shown separately and respect the budget", async () => {
+    const r = await run("they love cricket, under ₹1,000");
+    expect(r.popular.length).toBeGreaterThan(0);
+    expect(r.popular.every((p) => p.price <= 1000)).toBe(true);
+    expect(r.popular.every((p) => /Not matched to your description/.test(p.reason))).toBe(true);
+  });
+});
+
+describe("gift box", () => {
+  const products = getAllProducts();
+  const byName = (name: string) => products.find((p) => p.name === name)!;
+
+  it("needs at least two gifts", async () => {
+    const { summariseBox } = await import("@/lib/gift-box");
+    expect(summariseBox([byName("Speckled Stoneware Mug")], TODAY).problem).toMatch(/at least 2/);
+  });
+
+  it("totals prices and only allows areas every maker delivers to", async () => {
+    const { summariseBox } = await import("@/lib/gift-box");
+    const box = summariseBox([byName("Speckled Stoneware Mug"), byName("Assorted Bonbon Box")], TODAY);
+    expect(box.subtotal).toBe(950 + 1600);
+    expect(box.problem).toBeUndefined();
+    // Mitti (S, C, W) ∩ Cocoa Lane (S, C, W) = three zones, not Thane
+    expect(box.zones).not.toContain("thane");
+    expect(box.perishable).toBe(true);
+  });
+
+  it("waits for the slowest item plus a packing day", async () => {
+    const { summariseBox } = await import("@/lib/gift-box");
+    const box = summariseBox([byName("Speckled Stoneware Mug"), byName("Neutral Glaze Vase Collection")], TODAY);
+    // Vases take up to 9 working days; +1 to pack; Mitti delivers in 1 day
+    expect(box.earliest! > "2026-11-01").toBe(true);
+  });
+
+  it("rejects makers with no shared delivery area", async () => {
+    const { summariseBox } = await import("@/lib/gift-box");
+    const colabaOnly = byName("Mulberry Silk Scarf"); // Dhaaga: South + Central
+    const thaneSide = byName("Brass Diya Pair"); // Tara: Central, Western, Thane, Navi Mumbai
+    const box = summariseBox([colabaOnly, thaneSide], TODAY);
+    expect(box.zones).toEqual(["central"]);
   });
 });

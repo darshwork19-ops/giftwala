@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { formatPrice } from "@/lib/format";
-import type { FinderResponse, IdeaCard, ListingCard, MatchRequest } from "@/lib/finder/types";
+import { formatShortDate } from "@/lib/finder/dates";
+import type { ExternalCard, FinderResponse, IdeaCard, ListingCard, MatchRequest } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
 import { PenIcon, SparkIcon } from "@/components/ui/icons";
-import { DescribeBox } from "./describe-box";
+import { DescribeBox, type FinderView } from "./describe-box";
 
 type Refinement = "others" | "cheaper" | "handmade" | "unusual";
 
@@ -23,12 +24,17 @@ const REFINEMENTS: { id: Refinement; label: string; clause?: string }[] = [
 type Result = { key: string } & ({ data: FinderResponse } | { error: string });
 
 export function FinderResults() {
-  const brief = useSearchParams().get("brief")?.trim() ?? "";
+  const params = useSearchParams();
+  const brief = params.get("brief")?.trim() ?? "";
+  const view: FinderView = params.get("view") === "ideas" ? "ideas" : "buy";
   // A new description starts a fresh session (no carried-over refinements)
-  return <FinderSession key={brief} brief={brief} />;
+  return <FinderSession key={brief} brief={brief} view={view} />;
 }
 
-function FinderSession({ brief }: { brief: string }) {
+function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
+  const router = useRouter();
+  // Switching views only changes the URL; results are already loaded
+  const setView = (next: FinderView) => router.replace(routes.giftFinderFor(brief, next), { scroll: false });
   // Refinements keep the original description and add to it
   const [refine, setRefine] = useState<{ clauses: string[]; exclude: string[]; budgetMax?: number }>({
     clauses: [],
@@ -67,7 +73,7 @@ function FinderSession({ brief }: { brief: string }) {
   if (!brief || editing) {
     return (
       <div className="max-w-2xl">
-        <DescribeBox defaultValue={brief} size="lg" />
+        <DescribeBox defaultValue={brief} defaultView={view} size="lg" />
         {editing && (
           <button type="button" onClick={() => setEditing(false)} className="mt-3 text-sm text-muted hover:text-burgundy">
             Cancel
@@ -129,6 +135,8 @@ function FinderSession({ brief }: { brief: string }) {
           <Outcome
             data={data}
             brief={brief}
+            view={view}
+            onViewChange={setView}
             onEdit={() => setEditing(true)}
             onRetry={() => setAttempt((a) => a + 1)}
             onUseRules={() => setMode("rules")}
@@ -145,6 +153,8 @@ function FinderSession({ brief }: { brief: string }) {
 interface OutcomeProps {
   data: FinderResponse;
   brief: string;
+  view: FinderView;
+  onViewChange: (view: FinderView) => void;
   onEdit: () => void;
   onRetry: () => void;
   onUseRules: () => void;
@@ -153,7 +163,7 @@ interface OutcomeProps {
   onResetRefine: () => void;
 }
 
-function Outcome({ data, brief, onEdit, onRetry, onUseRules, ...refineProps }: OutcomeProps) {
+function Outcome({ data, brief, view, onViewChange, onEdit, onRetry, onUseRules, ...refineProps }: OutcomeProps) {
   switch (data.status) {
     case "nonsense":
     case "off_topic":
@@ -167,7 +177,7 @@ function Outcome({ data, brief, onEdit, onRetry, onUseRules, ...refineProps }: O
         </Notice>
       );
     case "follow_up":
-      return <FollowUp data={data} brief={brief} />;
+      return <FollowUp data={data} brief={brief} view={view} />;
     case "ai_error":
       return (
         <Notice tone="error" title="Gift matching is unavailable right now">
@@ -193,21 +203,80 @@ function Outcome({ data, brief, onEdit, onRetry, onUseRules, ...refineProps }: O
         </Notice>
       );
     case "results":
-      return <Results data={data} {...refineProps} />;
+      return <Results data={data} view={view} onViewChange={onViewChange} {...refineProps} />;
   }
 }
 
-function Results({ data, onRefine, refined, onResetRefine }: Pick<OutcomeProps, "data" | "onRefine" | "refined" | "onResetRefine">) {
-  const count = data.listings.length;
+function Results({
+  data,
+  view,
+  onViewChange,
+  onRefine,
+  refined,
+  onResetRefine,
+}: Pick<OutcomeProps, "data" | "view" | "onViewChange" | "onRefine" | "refined" | "onResetRefine">) {
+  const buyCount = data.listings.length + data.external.length;
+  const ideaCount = data.ideas.length;
+
   return (
     <>
-      {data.message && <p className="mb-8 max-w-2xl text-muted">{data.message}</p>}
+      <div role="tablist" aria-label="What to show" className="mb-8 inline-flex rounded-md border border-linen bg-white p-1">
+        {(
+          [
+            { id: "buy", label: "Things you can buy", count: buyCount },
+            { id: "ideas", label: "Gift ideas", count: ideaCount },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={view === tab.id}
+            onClick={() => onViewChange(tab.id)}
+            className="rounded px-4 py-2 text-sm font-medium text-muted transition-colors aria-selected:bg-burgundy aria-selected:text-white"
+          >
+            {tab.label} <span className="opacity-80">({tab.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {view === "ideas" ? (
+        <IdeasView data={data} onSwitch={() => onViewChange("buy")} buyCount={buyCount} />
+      ) : (
+        <BuyView data={data} onSwitch={() => onViewChange("ideas")} onRefine={onRefine} refined={refined} onResetRefine={onResetRefine} />
+      )}
+    </>
+  );
+}
+
+function BuyView({
+  data,
+  onSwitch,
+  onRefine,
+  refined,
+  onResetRefine,
+}: Pick<OutcomeProps, "data" | "onRefine" | "refined" | "onResetRefine"> & { onSwitch: () => void }) {
+  const count = data.listings.length;
+  const nothingToBuy = count === 0 && data.external.length === 0;
+
+  return (
+    <>
+      {nothingToBuy && (
+        <Notice title="Nothing to buy matches yet">
+          <p>Neither the GIFTWALA catalogue nor the online shops we list have something that fits this description.</p>
+          {data.ideas.length > 0 && (
+            <Button className="mt-4" onClick={onSwitch}>
+              See {data.ideas.length} gift {data.ideas.length === 1 ? "idea" : "ideas"} instead
+            </Button>
+          )}
+        </Notice>
+      )}
 
       {count > 0 && (
         <section aria-labelledby="listings-heading">
           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <h2 id="listings-heading" className="font-serif text-3xl tracking-tight">
-              {count === 1 ? "1 gift that fits" : `${count} gifts that fit`}
+              {count === 1 ? "1 gift from GIFTWALA" : `${count} gifts from GIFTWALA`}
             </h2>
             <p className="inline-flex items-center gap-1.5 text-xs text-muted">
               <SparkIcon width={14} height={14} />
@@ -226,56 +295,148 @@ function Results({ data, onRefine, refined, onResetRefine }: Pick<OutcomeProps, 
           {data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
           {data.deliveryNote && <p className="mt-2 text-sm text-muted">{data.deliveryNote}</p>}
 
-          <div className="mt-10 border-t border-linen pt-6">
-            <p className="mb-3 text-sm font-medium">Not quite right?</p>
-            <div className="flex flex-wrap gap-2">
-              {REFINEMENTS.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => onRefine(r.id)}
-                  disabled={r.id === "others" && data.remaining === 0}
-                  className="rounded-full border border-charcoal/20 bg-white px-4 py-2 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50"
-                >
-                  {r.label}
-                </button>
-              ))}
-              {refined && (
-                <button type="button" onClick={onResetRefine} className="px-2 py-2 text-sm text-muted underline-offset-4 hover:underline">
-                  Start over
-                </button>
-              )}
+          <div className="mt-8 flex flex-col gap-4 border-t border-linen pt-6 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-3 text-sm font-medium">Not quite right?</p>
+              <div className="flex flex-wrap gap-2">
+                {REFINEMENTS.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => onRefine(r.id)}
+                    disabled={r.id === "others" && data.remaining === 0}
+                    className="rounded-full border border-charcoal/20 bg-white px-4 py-2 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50"
+                  >
+                    {r.label}
+                  </button>
+                ))}
+                {refined && (
+                  <button type="button" onClick={onResetRefine} className="px-2 py-2 text-sm text-muted underline-offset-4 hover:underline">
+                    Start over
+                  </button>
+                )}
+              </div>
             </div>
+            <ButtonLink href={routes.giftBox} variant="secondary" className="shrink-0">
+              Mix and match a gift box
+            </ButtonLink>
           </div>
         </section>
       )}
 
-      {data.ideas.length > 0 && (
-        <section aria-labelledby="ideas-heading" className={count > 0 ? "mt-16" : ""}>
-          <h2 id="ideas-heading" className="font-serif text-3xl tracking-tight">Gift ideas to look for</h2>
+      {data.external.length > 0 && (
+        <section aria-labelledby="external-heading" className={count > 0 ? "mt-16" : ""}>
+          <h2 id="external-heading" className="font-serif text-3xl tracking-tight">From online shops</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Ideas, not listings: GIFTWALA doesn&apos;t sell these, and no price, stock, seller or delivery has been
-            checked. Use them as a starting point wherever you shop.
+            Sold by the shop, not GIFTWALA. Prices are as we last checked them; stock, delivery, payment and returns
+            are handled by the shop.
           </p>
-          <ul className="mt-6 grid gap-5 md:grid-cols-2">
-            {data.ideas.map((idea) => (
-              <li key={idea.id}>
-                <IdeaView idea={idea} />
+          <ul className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {data.external.map((product) => (
+              <li key={product.id}>
+                <ExternalView product={product} />
               </li>
             ))}
           </ul>
           {count === 0 && data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
         </section>
       )}
+
+      {data.popular.length > 0 && (
+        <section aria-labelledby="popular-heading" className="mt-16 border-t border-linen pt-12">
+          <h2 id="popular-heading" className="font-serif text-2xl tracking-tight">Popular gifts anyone would enjoy</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Well-loved gifts from the GIFTWALA catalogue. These aren&apos;t matched to your description.
+          </p>
+          <ul className="mt-6 grid grid-cols-2 gap-6 lg:grid-cols-4">
+            {data.popular.map((listing) => (
+              <li key={listing.id}>
+                <ListingView listing={listing} rank={9} requestHref={requestHref(listing, data)} compact />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   );
 }
 
-function FollowUp({ data, brief }: { data: FinderResponse; brief: string }) {
+function IdeasView({ data, onSwitch, buyCount }: { data: FinderResponse; onSwitch: () => void; buyCount: number }) {
+  if (data.ideas.length === 0) {
+    return (
+      <Notice title="No gift ideas for this one">
+        <p>We don&apos;t have ideas that match this description yet.</p>
+        {buyCount > 0 && (
+          <Button className="mt-4" onClick={onSwitch}>
+            See {buyCount} {buyCount === 1 ? "thing" : "things"} you can buy
+          </Button>
+        )}
+      </Notice>
+    );
+  }
+  return (
+    <section aria-labelledby="ideas-heading">
+      <h2 id="ideas-heading" className="font-serif text-3xl tracking-tight">Gift ideas to look for</h2>
+      <p className="mt-2 max-w-2xl text-sm text-muted">
+        Ideas, not listings: no price, stock, seller or delivery has been checked. Use them as a starting point
+        wherever you shop.
+      </p>
+      <ul className="mt-6 grid gap-5 md:grid-cols-2">
+        {data.ideas.map((idea) => (
+          <li key={idea.id}>
+            <IdeaView idea={idea} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ExternalView({ product }: { product: ExternalCard }) {
+  return (
+    <article className="flex h-full flex-col">
+      <a href={product.url} target="_blank" rel="noopener noreferrer" className="group block">
+        <div className="relative aspect-square overflow-hidden rounded-md bg-white">
+          <GiftImage
+            src={product.image.src}
+            alt={product.image.alt}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          />
+        </div>
+      </a>
+      <div className="flex flex-1 flex-col pt-4">
+        <p className="text-xs text-muted">
+          <span className="font-medium text-charcoal">Online shop</span> · {product.shop.name}
+          {product.adultsOnly && (
+            <span className="ml-1.5 rounded bg-linen px-1.5 py-0.5 text-[0.7rem] font-medium text-charcoal">18+ barware</span>
+          )}
+        </p>
+        <h3 className="mt-1.5 text-[0.95rem] leading-snug font-medium">{product.name}</h3>
+        <p className="mt-2 text-sm text-muted">{product.reason}</p>
+        <p className="mt-3 text-sm">
+          <span className="font-semibold">{formatPrice(product.price)}</span>
+          {product.compareAt && product.compareAt > product.price && (
+            <span className="ml-2 text-xs text-muted line-through">{formatPrice(product.compareAt)}</span>
+          )}
+        </p>
+        <p className="mt-0.5 text-xs text-muted">Price checked {formatShortDate(product.priceCheckedOn)} · may have changed</p>
+        <div className="mt-auto pt-4">
+          <ButtonLink href={product.url} target="_blank" rel="noopener noreferrer" variant="secondary" className="w-full">
+            View on {product.shop.name} ↗
+          </ButtonLink>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FollowUp({ data, brief, view }: { data: FinderResponse; brief: string; view: FinderView }) {
   const router = useRouter();
   const [answer, setAnswer] = useState("");
   // The answer is added to the original description, so nothing is lost
-  const extend = (more: string) => router.push(routes.giftFinderFor(`${brief.replace(/[.\s]+$/, "")}. ${more}`));
+  const extend = (more: string) =>
+    router.push(routes.giftFinderFor(`${brief.replace(/[.\s]+$/, "")}. ${more}`, view));
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (answer.trim()) extend(answer.trim());
@@ -362,7 +523,17 @@ function requestHref(listing: ListingCard, data: FinderResponse): string {
   return routes.requestGift(listing.slug) + (query ? `?${query}` : "");
 }
 
-function ListingView({ listing, rank, requestHref }: { listing: ListingCard; rank: number; requestHref: string }) {
+function ListingView({
+  listing,
+  rank,
+  requestHref,
+  compact = false,
+}: {
+  listing: ListingCard;
+  rank: number;
+  requestHref: string;
+  compact?: boolean;
+}) {
   const estimated = listing.delivery.status === "estimated";
   return (
     <article className="flex h-full flex-col">
@@ -389,7 +560,7 @@ function ListingView({ listing, rank, requestHref }: { listing: ListingCard; ran
             {listing.name}
           </Link>
         </h3>
-        <p className="mt-2 text-sm">{listing.reason}</p>
+        {!compact && <p className="mt-2 text-sm">{listing.reason}</p>}
         <p className="mt-3 text-sm font-semibold">{formatPrice(listing.price)}</p>
         <p className={`mt-1 text-xs ${estimated ? "text-sage" : "text-muted"}`}>
           <span aria-hidden="true">{estimated ? "✓ " : "ⓘ "}</span>

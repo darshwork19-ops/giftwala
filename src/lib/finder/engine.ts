@@ -4,10 +4,19 @@ import type { AiProvider } from "./ai-types";
 import { formatShortDate } from "./dates";
 import { SERVICE_AREA } from "./destination";
 import { classifyIntent, followUpFor, type IntentKind } from "./intent";
-import { describeExclusions, filterAndScore, matchIdeas, ruleReason, type Candidate } from "./match";
+import { getShop } from "@/data/external-products";
+import {
+  describeExclusions,
+  filterAndScore,
+  matchExternal,
+  matchIdeas,
+  popularGifts,
+  ruleReason,
+  type Candidate,
+} from "./match";
 import { parseBrief, type BriefFacts } from "./parse";
 import { INTENT_INSTRUCTIONS, IntentCheckSchema, RANKER_INSTRUCTIONS, RankingSchema, rankerPrompt } from "./ranker";
-import type { DeliveryInfo, FinderResponse, IdeaCard, ListingCard, MatchRequest } from "./types";
+import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard, MatchRequest } from "./types";
 
 /**
  * The Gift Finder pipeline, in order:
@@ -84,6 +93,24 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     lookFor: idea.lookFor,
     whereToFind: idea.whereToFind,
   }));
+  const external = matchExternal(facts, brief).map(({ product, matched }): ExternalCard => {
+    const shop = getShop(product.shopId);
+    return {
+      kind: "external",
+      id: product.id,
+      name: product.name,
+      shop: { name: shop.name, url: shop.url },
+      url: product.url,
+      price: product.price,
+      compareAt: product.compareAt,
+      priceCheckedOn: product.priceCheckedOn,
+      image: product.image,
+      category: product.category,
+      summary: product.summary,
+      reason: `Matches “${matched.slice(0, 2).join("” and “")}” from your description.`,
+      adultsOnly: Boolean(product.adultsOnly),
+    };
+  });
   const excludedNote = describeExclusions(excluded, facts);
   const deliveryNote = deliveryNoteFor(facts);
 
@@ -138,7 +165,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
   };
 
   // 5. Outcome
-  if (listings.length === 0 && ideas.length === 0) {
+  if (listings.length === 0 && ideas.length === 0 && external.length === 0) {
     return {
       ...base,
       understood,
@@ -159,10 +186,16 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     mode,
     provider: mode === "ai" ? deps.ai?.name : undefined,
     message:
-      listings.length === 0
-        ? "Nothing in the GIFTWALA catalogue matches yet, so here are gift ideas to look for elsewhere."
-        : undefined,
+      listings.length === 0 && external.length === 0
+        ? "Nothing we list matches yet, so here are gift ideas to look for elsewhere."
+        : listings.length === 0
+          ? "Nothing in the GIFTWALA catalogue matches yet, but these online shops have things that fit."
+          : undefined,
     listings,
+    external,
+    popular: popularGifts(facts, deps.today, listings.map((l) => l.id)).map((c) =>
+      toListing(c, popularReason(facts), facts),
+    ),
     ideas,
     excludedNote,
     deliveryNote,
@@ -183,6 +216,8 @@ function baseResponse(facts: BriefFacts): FinderResponse {
       interests: facts.interests.map((id) => interestList.find((i) => i.id === id)?.label ?? id),
     },
     listings: [],
+    external: [],
+    popular: [],
     ideas: [],
     remaining: 0,
   };
@@ -247,3 +282,11 @@ function noMatchMessage(unknown: string[], hadRelevantBeforeAi: boolean, exclude
     ? `We don't have gifts or ideas for “${subject}” yet. Try describing other things they enjoy.`
     : "We couldn't find a strong match. Try describing other things they enjoy.";
 }
+
+function popularReason(facts: BriefFacts): string {
+  const fits = [facts.budgetMax !== undefined && "your budget", facts.date && "your date", facts.destination && "the delivery area"]
+    .filter(Boolean)
+    .join(", ");
+  return `A well-loved gift from the GIFTWALA catalogue${fits ? `, within ${fits}` : ""}. Not matched to your description.`;
+}
+

@@ -11,7 +11,9 @@ export const routes = {
   makers: "/makers",
   maker: (slug: string) => `/makers/${slug}`,
   giftFinder: "/gift-finder",
-  giftFinderFor: (brief: string) => `/gift-finder?brief=${encodeURIComponent(brief)}`,
+  giftFinderFor: (brief: string, view?: "buy" | "ideas") =>
+    `/gift-finder?brief=${encodeURIComponent(brief)}${view ? `&view=${view}` : ""}`,
+  giftBox: "/gift-box",
   requestGift: (slug: string) => `/request/${slug}`,
   requests: "/requests",
   requestStatus: (ref: string) => `/requests?ref=${encodeURIComponent(ref)}`,

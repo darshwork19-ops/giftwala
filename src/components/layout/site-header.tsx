@@ -92,6 +92,11 @@ export function SiteHeader() {
                 Discover
               </Link>
             </li>
+            <li>
+              <Link href={routes.giftBox} className={navLink} aria-current={current(routes.giftBox)}>
+                Gift Box
+              </Link>
+            </li>
             <li className="relative">
               <button
                 type="button"
@@ -200,6 +205,7 @@ export function SiteHeader() {
             {[
               { href: routes.giftFinder, label: "Gift Finder" },
               { href: routes.gifts, label: "Discover all gifts" },
+              { href: routes.giftBox, label: "Mix and match a gift box" },
               { href: routes.makers, label: "Meet the Makers" },
               { href: routes.requests, label: "Your order requests" },
             ].map((item) => (
