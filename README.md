@@ -89,6 +89,7 @@ The pipeline lives in `src/lib/finder/engine.ts`:
 | GIFTWALA listing | A record in the demo catalogue (`src/data/products.ts`) | Sample price; delivery estimated only with area/PIN + date | Request this gift |
 | Gift idea | A concept (`src/data/gift-ideas.ts`) | None shown | "Before you buy, check" tips |
 | Online-shop product | A real product on another shop's site (`src/data/external-products.ts`), checked by hand | Price as checked on the stated date; stock and delivery handled by the shop | "View on <shop>" link |
+| Instagram maker | A Mumbai gifting business that sells by DM (`src/data/instagram-makers.ts`) | No price listed; delivery not checked | "Message on Instagram" link |
 
 ### Things you can buy vs gift ideas
 
@@ -102,26 +103,29 @@ switchable on the results page:
 
 ### Online-shop products
 
-48 products from 9 shops, collected on 21 Oct 2026:
+Currently **The Drunken Mug** (upcycled bottle glassware), 10 products
+collected by hand from its site on 21 Oct 2026, with the shop's own photos
+(the site owner confirmed these can be used). There is no affiliate link,
+partnership or live sync: prices and stock can change, so cards show the
+"checked on" date and link to the shop. Liquor-branded barware is only
+suggested when the brief mentions drinks and never for a child.
 
-| Shop | What | How collected |
-| --- | --- | --- |
-| The Drunken Mug | Upcycled bottle glassware | By hand from the site |
-| Decathlon India | Cricket, badminton, trekking, yoga | By hand from search pages |
-| Blue Tokai Coffee | Coffee gift sets | Public Shopify product feed |
-| VAHDAM India | Tea gift sets | Public Shopify product feed |
-| Chumbak | Mugs, tableware, festive decor | Public Shopify product feed |
-| Nicobar | Home fragrance, rakhi | Public Shopify product feed |
-| Bombay Shaving Company | Fragrance, grooming | Public Shopify product feed |
-| Mokobara | Travel kits, packing cubes, briefcase | Public Shopify product feed |
-| Smoor | Chocolates and hampers | Public Shopify product feed |
+### Independent Mumbai makers on Instagram
 
-Only in-stock items whose product page opened were kept. There is no
-affiliate link, partnership or live sync: prices and stock can change, so
-cards show the "checked on" date and link to the shop. Product photos are the shops' own:
-permission was confirmed for The Drunken Mug and Decathlon India (21 Oct 2026);
-confirm it for the other seven shops before launch. Liquor-branded barware is
-only suggested when the brief mentions drinks and never for a child.
+`src/data/instagram-makers.ts` lists 13 Mumbai gifting businesses that sell by
+Instagram DM: hampers, chocolates, bakes, cheese boards, portraits and frames.
+They come from the owner's AI Hack research and were re-checked on
+21 Oct 2026 with Apify's Instagram profile and post scrapers. Each has 500+
+followers, posted within 60 days, and passed an engagement check on recent
+posts: median likes ≥ 0.3% of followers and (avg comments ≥ 0.5 or likes
+≥ 1%), or ≥ 2 comments per post where likes are hidden. 13 other candidates
+failed, mostly high follower counts with near-zero likes. Instagram doesn't
+publish share counts, so shares weren't checked.
+
+Maker cards show the handle, what they make, follower and engagement figures
+with the check date, and a "Message on Instagram" link. They list no prices,
+so the card says the budget wasn't checked; GIFTWALA doesn't check their
+delivery either. No photos, personal names or phone numbers are stored.
 
 ### Gift box
 

@@ -5,18 +5,20 @@ import { formatShortDate } from "./dates";
 import { SERVICE_AREA } from "./destination";
 import { classifyIntent, followUpFor, type IntentKind } from "./intent";
 import { getShop } from "@/data/external-products";
+import { instagramUrl } from "@/data/instagram-makers";
 import {
   describeExclusions,
   filterAndScore,
   matchExternal,
   matchIdeas,
+  matchInstagramMakers,
   popularGifts,
   ruleReason,
   type Candidate,
 } from "./match";
 import { parseBrief, type BriefFacts } from "./parse";
 import { INTENT_INSTRUCTIONS, IntentCheckSchema, RANKER_INSTRUCTIONS, RankingSchema, rankerPrompt } from "./ranker";
-import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard, MatchRequest } from "./types";
+import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard, MakerCard, MatchRequest } from "./types";
 
 /**
  * The Gift Finder pipeline, in order:
@@ -111,6 +113,19 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
       adultsOnly: Boolean(product.adultsOnly),
     };
   });
+  const makers = matchInstagramMakers(facts).map(({ maker, matched }): MakerCard => ({
+    kind: "instagram-maker",
+    id: maker.id,
+    name: maker.name,
+    handle: maker.handle,
+    url: instagramUrl(maker.handle),
+    makes: maker.makes,
+    followers: maker.followers,
+    medianLikes: maker.medianLikes,
+    avgComments: maker.avgComments,
+    checkedOn: maker.checkedOn,
+    reason: `Matches “${matched.slice(0, 2).join("” and “")}” from your description.`,
+  }));
   const excludedNote = describeExclusions(excluded, facts);
   const deliveryNote = deliveryNoteFor(facts);
 
@@ -165,7 +180,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
   };
 
   // 5. Outcome
-  if (listings.length === 0 && ideas.length === 0 && external.length === 0) {
+  if (listings.length === 0 && ideas.length === 0 && external.length === 0 && makers.length === 0) {
     return {
       ...base,
       understood,
@@ -186,13 +201,14 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     mode,
     provider: mode === "ai" ? deps.ai?.name : undefined,
     message:
-      listings.length === 0 && external.length === 0
+      listings.length === 0 && external.length === 0 && makers.length === 0
         ? "Nothing we list matches yet, so here are gift ideas to look for elsewhere."
         : listings.length === 0
-          ? "Nothing in the GIFTWALA catalogue matches yet, but these online shops have things that fit."
+          ? "Nothing in the GIFTWALA catalogue matches yet, but these shops and makers have things that fit."
           : undefined,
     listings,
     external,
+    makers,
     popular: popularGifts(facts, deps.today, listings.map((l) => l.id)).map((c) =>
       toListing(c, popularReason(facts), facts),
     ),
@@ -217,6 +233,7 @@ function baseResponse(facts: BriefFacts): FinderResponse {
     },
     listings: [],
     external: [],
+    makers: [],
     popular: [],
     ideas: [],
     remaining: 0,

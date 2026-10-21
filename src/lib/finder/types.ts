@@ -63,6 +63,21 @@ export interface ExternalCard {
   adultsOnly: boolean;
 }
 
+/** An independent Mumbai maker who sells by Instagram DM (no listed prices). */
+export interface MakerCard {
+  kind: "instagram-maker";
+  id: string;
+  name: string;
+  handle: string;
+  url: string;
+  makes: string;
+  followers: number;
+  medianLikes: number | null;
+  avgComments: number;
+  checkedOn: string;
+  reason: string;
+}
+
 /** A gift concept with no seller, price, stock or link behind it. */
 export interface IdeaCard {
   kind: "idea";
@@ -95,6 +110,8 @@ export interface FinderResponse {
   listings: ListingCard[];
   /** Matching products on other shops' websites (bought there). */
   external: ExternalCard[];
+  /** Matching independent Mumbai makers who take orders on Instagram. */
+  makers: MakerCard[];
   /** Well-loved catalogue gifts within the same budget/date/destination, shown separately. */
   popular: ListingCard[];
   ideas: IdeaCard[];

@@ -257,12 +257,10 @@ describe("parsing", () => {
 });
 
 describe("online-shop products", () => {
-  it("cricket → real Decathlon bats within budget, labelled as external", async () => {
-    const r = await run("A birthday gift for my cricket-loving friend under ₹1,500");
-    expect(r.external.length).toBeGreaterThan(0);
-    expect(r.external.every((p) => p.price <= 1500 && p.kind === "external")).toBe(true);
-    expect(r.external.every((p) => p.url.startsWith("https://www.decathlon.in/"))).toBe(true);
-    expect(r.external.every((p) => p.priceCheckedOn)).toBe(true);
+  it("only The Drunken Mug remains as an online shop", async () => {
+    const { externalProducts } = await import("@/data/external-products");
+    expect(externalProducts.length).toBeGreaterThan(0);
+    expect(externalProducts.every((p) => p.shopId === "drunken-mug")).toBe(true);
   });
 
   it("liquor-branded barware needs a drink-related brief", async () => {
@@ -328,12 +326,10 @@ describe("gift box", () => {
   });
 });
 
-describe("gifting-brand products", () => {
+describe("online-shop data", () => {
   it("every online-shop product has a real https link, image, price and check date", async () => {
     const { externalProducts, getShop } = await import("@/data/external-products");
-    expect(externalProducts.length).toBeGreaterThanOrEqual(40);
     for (const p of externalProducts) {
-      expect(p.url.startsWith("https://")).toBe(true);
       expect(p.url.startsWith(getShop(p.shopId).url)).toBe(true);
       expect(p.image.src.startsWith("https://")).toBe(true);
       expect(p.price).toBeGreaterThan(0);
@@ -341,24 +337,50 @@ describe("gifting-brand products", () => {
     }
     expect(new Set(externalProducts.map((p) => p.id)).size).toBe(externalProducts.length);
   });
+});
 
-  it("a coffee lover under ₹1,500 gets coffee gifts within budget", async () => {
-    const r = await run("my friend loves coffee, under ₹1,500");
-    expect(r.external.some((p) => p.shop.name === "Blue Tokai Coffee")).toBe(true);
-    expect(r.external.every((p) => p.price <= 1500)).toBe(true);
+describe("Mumbai makers on Instagram", () => {
+  it("every maker meets the follower and engagement rules", async () => {
+    const { instagramMakers } = await import("@/data/instagram-makers");
+    expect(instagramMakers.length).toBeGreaterThan(0);
+    for (const m of instagramMakers) {
+      expect(m.followers).toBeGreaterThanOrEqual(500);
+      if (m.medianLikes === null) {
+        expect(m.avgComments).toBeGreaterThanOrEqual(2);
+      } else {
+        const rate = m.medianLikes / m.followers;
+        expect(rate).toBeGreaterThanOrEqual(0.003);
+        expect(m.avgComments >= 0.5 || rate >= 0.01).toBe(true);
+      }
+    }
   });
 
-  it("a traveller gets travel gear from Mokobara, not chocolates", async () => {
-    const r = await run("my sister loves travelling");
-    expect(r.external.some((p) => p.shop.name === "Mokobara")).toBe(true);
-    expect(r.external.some((p) => /chocolate/i.test(p.name))).toBe(false);
+  it("a chocolate hamper brief finds the chocolatier", async () => {
+    const r = await run("a chocolate hamper for my friend's birthday");
+    expect(r.makers.map((m) => m.handle)).toContain("tck_thechocolatekitchen");
+    expect(r.makers.every((m) => m.url.startsWith("https://www.instagram.com/"))).toBe(true);
   });
 
-  it("several interests each get shop products before any gets a second", async () => {
-    const r = await run("My friend loves coffee, tea and travelling, under ₹2,000");
-    const shops = new Set(r.external.map((p) => p.shop.name));
-    expect(shops.has("Mokobara")).toBe(true);
-    expect(shops.has("Blue Tokai Coffee")).toBe(true);
-    expect(shops.has("VAHDAM India")).toBe(true);
+  it("a portrait or sketch brief finds the artwork maker", async () => {
+    const r = await run("a pencil sketch portrait of my parents for their anniversary");
+    expect(r.makers.map((m) => m.handle)).toContain("giftbyjiggiart_official");
+  });
+
+  it("a cheese board brief finds The Bombay Board", async () => {
+    const r = await run("my brother loves cheese and hosting friends");
+    expect(r.makers.map((m) => m.handle)).toContain("thebombayboard");
+  });
+
+  it("makers never appear for nonsense, vague briefs or outside Mumbai", async () => {
+    expect((await run("bsibcisbc")).makers).toHaveLength(0);
+    expect((await run("I need a gift for my sister")).makers).toHaveLength(0);
+    expect((await run("a chocolate hamper for my friend in Delhi")).makers).toHaveLength(0);
+  });
+
+  it("cricket shows no makers or shop products, only ideas", async () => {
+    const r = await run("cricket bat");
+    expect(r.makers).toHaveLength(0);
+    expect(r.external).toHaveLength(0);
+    expect(r.ideas.length).toBeGreaterThan(0);
   });
 });

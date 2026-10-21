@@ -1,5 +1,6 @@
 import { externalProducts, type ExternalProduct } from "@/data/external-products";
 import { giftIdeas, type GiftIdea } from "@/data/gift-ideas";
+import { instagramMakers, type InstagramMaker } from "@/data/instagram-makers";
 import { interests as interestList, occasions } from "@/data/taxonomy";
 import { getAllProducts, getMaker, isPersonalisable } from "@/lib/catalogue";
 import type { Product } from "@/lib/types";
@@ -42,6 +43,7 @@ export const KNOWN_SUBJECTS: Set<string> = new Set([
   ...getAllProducts().flatMap((p) => [...tagTerms(p)]),
   ...giftIdeas.flatMap((i) => i.triggers.map(stem)),
   ...externalProducts.flatMap((p) => [...tagTerms(p)]),
+  ...instagramMakers.flatMap((m) => [...tagTerms(m)]),
 ]);
 
 export type ExclusionReason = "budget" | "date" | "destination";
@@ -262,3 +264,39 @@ export function popularGifts(facts: BriefFacts, today: string, excludeIds: strin
   }
   return out;
 }
+
+// ── Mumbai makers on Instagram ────────────────────────────────────────────
+
+export interface MakerMatch {
+  maker: InstagramMaker;
+  matched: string[];
+  score: number;
+}
+
+/**
+ * Instagram makers whose work matches what the brief is about. They list no
+ * prices, so budget can't be checked; the UI says so instead of hiding them.
+ */
+export function matchInstagramMakers(facts: BriefFacts, limit = 6): MakerMatch[] {
+  if (facts.destination?.kind === "outside") return []; // Mumbai-only makers
+  const ranked = instagramMakers
+    .map((maker) => {
+      const terms = tagTerms(maker);
+      const hits = facts.keywords.filter((w) => terms.has(stem(w)));
+      const matched = hits.filter((w) => !hits.some((o) => o !== w && o.includes("-") && o.split("-").includes(w)));
+      const interestHits = facts.interests.filter((i) => maker.interests.includes(i));
+      let score = matched.length * 5 + interestHits.length * 2;
+      if (facts.occasion && maker.occasions.includes(facts.occasion)) score += 1;
+      return { maker, matched, interestHits, score };
+    })
+    .filter((m) => m.matched.length > 0 || m.interestHits.length > 0);
+  // Prefer makers that match a subject word over interest-only matches
+  const pool = ranked.some((m) => m.matched.length > 0) ? ranked.filter((m) => m.matched.length > 0) : ranked;
+  return coverEach(
+    pool
+      .map(({ maker, matched, interestHits, score }) => ({ maker, matched: matched.length ? matched : interestHits, score }))
+      .sort((a, b) => b.score - a.score || b.maker.followers - a.maker.followers),
+    limit,
+  );
+}
+

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { formatPrice } from "@/lib/format";
 import { formatShortDate } from "@/lib/finder/dates";
-import type { ExternalCard, FinderResponse, IdeaCard, ListingCard, MatchRequest } from "@/lib/finder/types";
+import type { ExternalCard, FinderResponse, IdeaCard, ListingCard, MakerCard, MatchRequest } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
@@ -215,7 +215,7 @@ function Results({
   refined,
   onResetRefine,
 }: Pick<OutcomeProps, "data" | "view" | "onViewChange" | "onRefine" | "refined" | "onResetRefine">) {
-  const buyCount = data.listings.length + data.external.length;
+  const buyCount = data.listings.length + data.external.length + data.makers.length;
   const ideaCount = data.ideas.length;
 
   return (
@@ -257,13 +257,13 @@ function BuyView({
   onResetRefine,
 }: Pick<OutcomeProps, "data" | "onRefine" | "refined" | "onResetRefine"> & { onSwitch: () => void }) {
   const count = data.listings.length;
-  const nothingToBuy = count === 0 && data.external.length === 0;
+  const nothingToBuy = count === 0 && data.external.length === 0 && data.makers.length === 0;
 
   return (
     <>
       {nothingToBuy && (
         <Notice title="Nothing to buy matches yet">
-          <p>Neither the GIFTWALA catalogue nor the online shops we list have something that fits this description.</p>
+          <p>Nothing in the GIFTWALA catalogue, our online shops or our Mumbai makers fits this description yet.</p>
           {data.ideas.length > 0 && (
             <Button className="mt-4" onClick={onSwitch}>
               See {data.ideas.length} gift {data.ideas.length === 1 ? "idea" : "ideas"} instead
@@ -342,6 +342,23 @@ function BuyView({
         </section>
       )}
 
+      {data.makers.length > 0 && (
+        <section aria-labelledby="makers-heading" className={count > 0 || data.external.length > 0 ? "mt-16" : ""}>
+          <h2 id="makers-heading" className="font-serif text-3xl tracking-tight">Independent Mumbai makers</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Small gifting businesses that take orders on Instagram. We checked that each is active with genuine
+            engagement, but they don&apos;t list prices, so ask about price and delivery when you message them.
+          </p>
+          <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {data.makers.map((maker) => (
+              <li key={maker.id}>
+                <MakerView maker={maker} budgetMax={data.understood.budgetMax} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {data.popular.length > 0 && (
         <section aria-labelledby="popular-heading" className="mt-16 border-t border-linen pt-12">
           <h2 id="popular-heading" className="font-serif text-2xl tracking-tight">Popular gifts anyone would enjoy</h2>
@@ -389,6 +406,48 @@ function IdeasView({ data, onSwitch, buyCount }: { data: FinderResponse; onSwitc
         ))}
       </ul>
     </section>
+  );
+}
+
+function MakerView({ maker, budgetMax }: { maker: MakerCard; budgetMax?: number }) {
+  const engagement =
+    maker.medianLikes === null
+      ? `likes hidden, ~${Math.round(maker.avgComments)} comments per post`
+      : `~${Math.round(maker.medianLikes)} likes, ~${Math.round(maker.avgComments)} comments per post`;
+  return (
+    <article className="flex h-full flex-col rounded-lg border border-linen bg-white p-5">
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush font-serif text-lg text-burgundy"
+        >
+          {maker.name.charAt(0)}
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted">
+            <span className="font-medium text-charcoal">Instagram maker</span> · Mumbai
+          </p>
+          <h3 className="font-serif text-xl leading-snug">{maker.name}</h3>
+          <p className="truncate text-sm text-burgundy">@{maker.handle}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm">{maker.makes}</p>
+      <p className="mt-2 text-xs text-muted">{maker.reason}</p>
+      <p className="mt-3 text-xs text-muted">
+        {maker.followers.toLocaleString("en-IN")} followers · {engagement} · checked {formatShortDate(maker.checkedOn)}
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        {budgetMax !== undefined
+          ? `No price listed — ask if it fits your ${formatPrice(budgetMax)} budget.`
+          : "No price listed — ask the maker."}{" "}
+        Delivery isn&apos;t checked by GIFTWALA.
+      </p>
+      <div className="mt-auto pt-4">
+        <ButtonLink href={maker.url} target="_blank" rel="noopener noreferrer" variant="secondary" className="w-full">
+          Message on Instagram ↗
+        </ButtonLink>
+      </div>
+    </article>
   );
 }
 
