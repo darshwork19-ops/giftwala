@@ -1,8 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { ApiError as GeminiApiError } from "@google/genai";
 import { interests as interestList, occasions, recipients } from "@/data/taxonomy";
 import { getMaker, isPersonalisable } from "@/lib/catalogue";
 import { zoneLabels } from "@/lib/finder/areas";
-import { claudeAvailable, rankWithClaude, type Ranking } from "@/lib/finder/claude";
+import { claudeAvailable, rankWithClaude } from "@/lib/finder/claude";
+import { geminiAvailable, rankWithGemini } from "@/lib/finder/gemini";
+import type { Ranking } from "@/lib/finder/ranker";
 import { formatShortDate, todayInIndia } from "@/lib/finder/dates";
 import { describeExclusions, filterAndScore, ruleReason, type Candidate } from "@/lib/finder/match";
 import { parseBrief } from "@/lib/finder/parse";
@@ -35,22 +38,25 @@ export async function POST(request: Request) {
   const { candidates, excluded } = filterAndScore(facts, today, exclude);
   const shortlist = candidates.slice(0, SHORTLIST);
 
-  // 2. AI: understand the brief and pick from the shortlist (optional)
+  // 2. AI: understand the brief and pick from the shortlist (optional).
+  //    Gemini is used when its key is set, otherwise Claude, otherwise rules.
+  const provider = geminiAvailable() ? "Gemini" : claudeAvailable() ? "Claude" : undefined;
   let ranking: Ranking | undefined;
   let modeNote: string | undefined;
-  if (shortlist.length === 0) {
-    modeNote = undefined;
-  } else if (!claudeAvailable()) {
+  if (shortlist.length > 0 && !provider) {
     modeNote = "AI matching is not set up on this deployment, so these picks use keyword matching.";
-  } else {
+  } else if (shortlist.length > 0) {
     try {
-      ranking = await rankWithClaude(brief, shortlist, MATCH_COUNT);
+      ranking =
+        provider === "Gemini"
+          ? await rankWithGemini(brief, shortlist, MATCH_COUNT)
+          : await rankWithClaude(brief, shortlist, MATCH_COUNT);
       if (!ranking) modeNote = "AI matching couldn't answer this one, so these picks use keyword matching.";
     } catch (error) {
-      if (error instanceof Anthropic.APIError) {
-        console.error(`Claude API error ${error.status}: ${error.message}`);
+      if (error instanceof GeminiApiError || error instanceof Anthropic.APIError) {
+        console.error(`${provider} API error ${error.status}: ${error.message}`);
       } else {
-        console.error("Claude ranking failed", error);
+        console.error(`${provider} ranking failed`, error);
       }
       modeNote = "AI matching is unavailable right now, so these picks use keyword matching.";
     }
@@ -88,6 +94,7 @@ export async function POST(request: Request) {
 
   const response: MatchResponse = {
     mode: ranking && ranking.picks.length > 0 ? "ai" : "rules",
+    provider: ranking && ranking.picks.length > 0 ? provider : undefined,
     modeNote,
     understood: {
       summary: ranking?.summary,

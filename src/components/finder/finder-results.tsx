@@ -137,7 +137,9 @@ function FinderSession({ brief }: { brief: string }) {
               </h2>
               <p className="inline-flex items-center gap-1.5 text-xs text-muted">
                 <SparkIcon width={14} height={14} />
-                {data.mode === "ai" ? "Picked and explained by Claude from eligible gifts" : "Picked by keyword matching"}
+                {data.mode === "ai"
+                  ? `Picked and explained by ${data.provider ?? "AI"} from eligible gifts`
+                  : "Picked by keyword matching"}
               </p>
             </div>
             <ul className="grid gap-8 md:grid-cols-3">

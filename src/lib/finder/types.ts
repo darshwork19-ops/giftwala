@@ -22,8 +22,10 @@ export interface MatchCard {
 }
 
 export interface MatchResponse {
-  /** "ai" when Claude ranked and explained; "rules" for the keyword fallback. */
+  /** "ai" when a model ranked and explained; "rules" for the keyword fallback. */
   mode: "ai" | "rules";
+  /** Which AI provider made the picks, when mode is "ai". */
+  provider?: "Gemini" | "Claude";
   modeNote?: string;
   understood: {
     summary?: string;
