@@ -78,6 +78,13 @@ export function GiftBoxBuilder() {
       history: [{ status: "ready", at: now }],
     };
     saveOrderRequest(request);
+    // Optional hand-off to an order workflow (n8n); a no-op unless configured
+    fetch("/api/order-request", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+      keepalive: true,
+    }).catch(() => {});
     router.push(routes.requestStatus(request.ref));
   }
 
