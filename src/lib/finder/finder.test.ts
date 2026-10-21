@@ -327,3 +327,38 @@ describe("gift box", () => {
     expect(box.zones).toEqual(["central"]);
   });
 });
+
+describe("gifting-brand products", () => {
+  it("every online-shop product has a real https link, image, price and check date", async () => {
+    const { externalProducts, getShop } = await import("@/data/external-products");
+    expect(externalProducts.length).toBeGreaterThanOrEqual(40);
+    for (const p of externalProducts) {
+      expect(p.url.startsWith("https://")).toBe(true);
+      expect(p.url.startsWith(getShop(p.shopId).url)).toBe(true);
+      expect(p.image.src.startsWith("https://")).toBe(true);
+      expect(p.price).toBeGreaterThan(0);
+      expect(p.priceCheckedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    expect(new Set(externalProducts.map((p) => p.id)).size).toBe(externalProducts.length);
+  });
+
+  it("a coffee lover under ₹1,500 gets coffee gifts within budget", async () => {
+    const r = await run("my friend loves coffee, under ₹1,500");
+    expect(r.external.some((p) => p.shop.name === "Blue Tokai Coffee")).toBe(true);
+    expect(r.external.every((p) => p.price <= 1500)).toBe(true);
+  });
+
+  it("a traveller gets travel gear from Mokobara, not chocolates", async () => {
+    const r = await run("my sister loves travelling");
+    expect(r.external.some((p) => p.shop.name === "Mokobara")).toBe(true);
+    expect(r.external.some((p) => /chocolate/i.test(p.name))).toBe(false);
+  });
+
+  it("several interests each get shop products before any gets a second", async () => {
+    const r = await run("My friend loves coffee, tea and travelling, under ₹2,000");
+    const shops = new Set(r.external.map((p) => p.shop.name));
+    expect(shops.has("Mokobara")).toBe(true);
+    expect(shops.has("Blue Tokai Coffee")).toBe(true);
+    expect(shops.has("VAHDAM India")).toBe(true);
+  });
+});

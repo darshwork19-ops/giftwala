@@ -200,9 +200,9 @@ export interface ExternalMatch {
  * Liquor-branded barware needs a drink-related word in the brief and is never
  * suggested when the recipient sounds under 18.
  */
-export function matchExternal(facts: BriefFacts, briefText: string, limit = 6): ExternalMatch[] {
+export function matchExternal(facts: BriefFacts, briefText: string, limit = 8): ExternalMatch[] {
   const minor = (facts.age !== undefined && facts.age < 18) || CHILD_WORDS.test(briefText.toLowerCase());
-  return externalProducts
+  const ranked = externalProducts
     .map((product) => {
       const terms = tagTerms(product);
       const hits = facts.keywords.filter((w) => terms.has(stem(w)));
@@ -218,8 +218,27 @@ export function matchExternal(facts: BriefFacts, briefText: string, limit = 6): 
       if (product.adultsOnly && (minor || !matched.some((w) => DRINK_WORDS.has(stem(w))))) return false;
       return true;
     })
-    .sort((a, b) => b.score - a.score || a.product.price - b.product.price)
-    .slice(0, limit);
+    .sort((a, b) => b.score - a.score || a.product.price - b.product.price);
+  return coverEach(ranked, limit);
+}
+
+/**
+ * Picks up to `limit` items so each matched word ("coffee", "travelling")
+ * gets at least one item before any word gets a second.
+ */
+function coverEach<T extends { matched: string[] }>(ranked: T[], limit: number): T[] {
+  const chosen: T[] = [];
+  const counts = new Map<string, number>();
+  while (chosen.length < limit) {
+    const remaining = ranked.filter((r) => !chosen.includes(r));
+    if (remaining.length === 0) break;
+    // The best item whose least-covered matched word has the fewest picks so far
+    const coverage = (r: T) => Math.min(...r.matched.map((m) => counts.get(m) ?? 0));
+    const next = remaining.reduce((best, r) => (coverage(r) < coverage(best) ? r : best));
+    chosen.push(next);
+    next.matched.forEach((m) => counts.set(m, (counts.get(m) ?? 0) + 1));
+  }
+  return chosen;
 }
 
 

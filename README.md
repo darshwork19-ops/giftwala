@@ -102,10 +102,23 @@ switchable on the results page:
 
 ### Online-shop products
 
-Collected by hand on 21 Oct 2026 from The Drunken Mug (upcycled glassware) and
-Decathlon India (cricket, badminton, trekking, yoga). There is no feed,
-affiliate link or partnership: prices and stock can change, so cards show the
-"checked on" date and link to the shop. Product photos are the shops' own;
+48 products from 9 shops, collected on 21 Oct 2026:
+
+| Shop | What | How collected |
+| --- | --- | --- |
+| The Drunken Mug | Upcycled bottle glassware | By hand from the site |
+| Decathlon India | Cricket, badminton, trekking, yoga | By hand from search pages |
+| Blue Tokai Coffee | Coffee gift sets | Public Shopify product feed |
+| VAHDAM India | Tea gift sets | Public Shopify product feed |
+| Chumbak | Mugs, tableware, festive decor | Public Shopify product feed |
+| Nicobar | Home fragrance, rakhi | Public Shopify product feed |
+| Bombay Shaving Company | Fragrance, grooming | Public Shopify product feed |
+| Mokobara | Travel kits, packing cubes, briefcase | Public Shopify product feed |
+| Smoor | Chocolates and hampers | Public Shopify product feed |
+
+Only in-stock items whose product page opened were kept. There is no
+affiliate link, partnership or live sync: prices and stock can change, so
+cards show the "checked on" date and link to the shop. Product photos are the shops' own;
 confirm permission with each shop before launch. Liquor-branded barware is
 only suggested when the brief mentions drinks and never for a child.
 
