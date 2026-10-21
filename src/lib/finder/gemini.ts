@@ -15,7 +15,13 @@ let client: GoogleGenAI | undefined;
 export const geminiProvider: AiProvider = {
   name: "Gemini",
   async generateJson({ system, prompt, schema }) {
-    client ??= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    client ??= new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      // The SDK retries up to 5 times with long back-off by default, which
+      // hides rate-limit (429) and overload (503) errors behind our timeout.
+      // One quick retry, then let the real error surface.
+      httpOptions: { retryOptions: { attempts: 2, initialDelay: 0.5, maxDelay: 1 } },
+    });
 
     // Gemini accepts a subset of JSON Schema; the "$schema" marker isn't part of it
     const responseJsonSchema: Record<string, unknown> = { ...z.toJSONSchema(schema) };
