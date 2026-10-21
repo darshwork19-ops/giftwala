@@ -19,11 +19,11 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: "GIFTWALA — Thoughtful gifts from independent makers",
+    default: "GIFTWALA — Know the person. Find the gift that feels like them.",
     template: "%s · GIFTWALA",
   },
   description:
-    "Find a thoughtful, personal gift for someone you care about. Discover handmade gifts from independent makers, filtered by occasion, recipient and budget.",
+    "Recipient-first gift discovery: describe the person you're buying for and find gifts that fit their interests, from independent makers and beyond.",
   applicationName: "GIFTWALA",
 };
 

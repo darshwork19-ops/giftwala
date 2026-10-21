@@ -14,7 +14,7 @@ export function CuratedGifts() {
         id="curated-title"
         eyebrow="Curated gifts"
         title="A few we keep coming back to"
-        description="Small-batch, handmade and easy to make personal."
+        description="Listings from the GIFTWALA demo catalogue. Makers and products are sample data."
         action={
           <Link
             href={routes.gifts}

@@ -1,10 +1,15 @@
-import { ClockIcon, HandIcon, PenIcon, ReceiptIcon } from "@/components/ui/icons";
+import { ClockIcon, HandIcon, PenIcon, ReceiptIcon, SparkIcon } from "@/components/ui/icons";
 
 /**
  * Reassurance limited to what the site actually does: arrival checks from
  * maker lead times, maker details and structured order requests.
  */
 const points = [
+  {
+    icon: SparkIcon,
+    title: "Ideas are labelled as ideas",
+    body: "When we don't stock what fits, we suggest it as a gift idea, with no invented prices, sellers or buy buttons.",
+  },
   {
     icon: PenIcon,
     title: "Personalisation you can check",
@@ -13,12 +18,12 @@ const points = [
   {
     icon: HandIcon,
     title: "Know who made it",
-    body: "Every gift names its maker and where they work, with a profile to read more.",
+    body: "Every catalogue gift names its maker and where they work. Makers in this demo are sample profiles.",
   },
   {
     icon: ClockIcon,
-    title: "Only gifts that arrive in time",
-    body: "The Gift Finder checks each maker's lead time and delivery area against your date, and leaves out anything that can't make it.",
+    title: "Delivery checked only with data",
+    body: "Catalogue gifts get an arrival estimate only when you give a Mumbai area or PIN and a date, using sample maker lead times. We don't promise delivery slots.",
   },
   {
     icon: ReceiptIcon,
@@ -34,7 +39,7 @@ export function TrustSection() {
         <h2 id="trust-title" className="sr-only">
           Ordering with GIFTWALA
         </h2>
-        <ul className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        <ul className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
           {points.map(({ icon: Icon, title, body }) => (
             <li key={title}>
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blush text-burgundy">

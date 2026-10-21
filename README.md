@@ -54,23 +54,52 @@ do not show the exact item described.
 
 ## How the Gift Finder works
 
-The MVP journey is: describe the person → see 3 matched gifts → send an order request.
+GIFTWALA is recipient-first: shoppers describe the person, not the product.
+The pipeline lives in `src/lib/finder/engine.ts`:
 
-1. **Describe.** One free-text box (`src/components/finder/describe-box.tsx`).
-2. **Rules first** (`src/lib/finder/parse.ts`, `match.ts`). Budget, date and Mumbai
-   area are read by code, never by AI. Gifts that are over budget, can't arrive
-   in time (maker lead time in working days + delivery days) or aren't delivered
-   to the area are removed before anything else happens.
-3. **AI ranks** (`POST /api/match`). Gemini (`src/lib/finder/gemini.ts`) or
-   Claude (`claude.ts`) only sees gifts that passed the filters, must pick from
-   their ids, and writes the "why it fits" line. Both share one prompt and one
-   output schema (`ranker.ts`), and every pick is re-checked in code. With no
-   AI key, or if the call fails, the finder falls back to keyword ranking and
-   the page says so.
-4. **Order request** (`/request/[slug]` → `/requests?ref=…`). The buyer picks
-   only the personalisation the product supports, and the page builds one
-   structured message for the maker. WhatsApp and email open with the message
-   pre-filled. Status (ready → sent → confirmed) is updated by the buyer.
+1. **Parse with rules** (`parse.ts`, `destination.ts`). Budget, date,
+   destination (a Mumbai area, a PIN code or another city), interests and
+   subject words are read by code, never by AI.
+2. **Classify intent** (`intent.ts`). Nonsense (`bsibcisbc`), off-topic
+   questions and vague requests ("a gift for my sister") stop here with no
+   products. Vague requests get one follow-up question. When rules can't tell
+   an unfamiliar word from gibberish, the AI is asked; if that fails, the safe
+   answer (no products) stands.
+3. **Hard filters + relevance** (`match.ts`). A product is only eligible if it
+   matches what the brief is *about* (a subject word or interest) and passes
+   the budget, date and destination checks. Occasion, recipient and modifiers
+   like "handmade" can rank but never qualify a product. Nothing ever falls
+   back to "all gifts".
+4. **Gift ideas** (`src/data/gift-ideas.ts`). For interests the catalogue
+   doesn't stock (cricket, travel, cars, tech…) the finder shows labelled
+   ideas with things to check, and no price, seller, stock or link.
+5. **AI ranking** (`ai.ts`, `gemini.ts`, `claude.ts`, `ranker.ts`). Optional.
+   The model reorders and explains eligible products, may return fewer or
+   none, and every id it returns is re-checked. If it times out or returns
+   empty or malformed output, the page shows an error with "Try again"; keyword
+   matches appear only if the shopper asks for them.
+6. **Delivery status**. A listing is "estimated to arrive" only when both a
+   destination and a date are given and the sample maker serves that area.
+   Otherwise it says delivery isn't verified. Time slots are never confirmed.
+
+### Listings vs ideas
+
+| Type | What it is | Price / delivery | Next step |
+| --- | --- | --- | --- |
+| GIFTWALA listing | A record in the demo catalogue (`src/data/products.ts`) | Sample price; delivery estimated only with area/PIN + date | Request this gift |
+| Gift idea | A concept (`src/data/gift-ideas.ts`) | None shown | "Before you buy, check" tips |
+| External retailer listing | Not implemented: no verified retailer feeds exist | — | — |
+
+## Tests
+
+```bash
+npm test
+```
+
+Runs Vitest on `src/lib/finder/finder.test.ts`: the 11 required search cases
+(nonsense, off-topic, vague, short queries, budget, absent category, AI
+timeout/malformed/empty, delivery checks, valid matches, catalogue browsing),
+the cross-category examples, every homepage interest tile, and parser checks.
 
 ## Configuration
 
@@ -90,5 +119,8 @@ Settings → Environment Variables). Both settings are optional.
 - Order requests are stored in the buyer's browser (`localStorage`) only.
 - Sample makers have no real phone numbers or emails, so WhatsApp and email
   open without a recipient.
-- Delivery estimates come from sample lead times, not a courier.
-- Mumbai only.
+- Delivery estimates come from sample lead times, not a courier. A valid PIN
+  format doesn't prove a courier serves the address; PINs aren't mapped to zones.
+- Mumbai, Thane and Navi Mumbai only.
+- No external retailer, affiliate, price or stock integrations exist, so gift
+  ideas have no prices or links.

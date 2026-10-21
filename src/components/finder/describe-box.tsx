@@ -6,9 +6,9 @@ import { routes } from "@/lib/routes";
 import { ArrowRightIcon, SparkIcon } from "@/components/ui/icons";
 
 const EXAMPLES = [
-  "GF turns 24 on Saturday, loves cats and K-dramas, ₹1,500, Andheri",
-  "Thank-you gift for my manager, under ₹1,000, Lower Parel, by next Friday",
-  "Mum loves plants and slow mornings, around ₹2k, Thane",
+  "My friend turns 24 on Saturday, loves cats and K-dramas, ₹1,500, Andheri",
+  "A 20-year-old who loves cricket, is adventurous and enjoys travelling",
+  "My sister is studying for CA Final, loves badminton and cars",
 ];
 
 interface DescribeBoxProps {
@@ -41,8 +41,8 @@ export function DescribeBox({ defaultValue = "", size = "md" }: DescribeBoxProps
         Who are you buying for?
       </label>
       <p id={hintId} className="mt-1 text-sm text-muted">
-        Their age, what they love, your budget, the date and the Mumbai area it
-        should reach.
+        What they love, their hobbies and personality. Add a budget, a date and a
+        Mumbai area or PIN if you want delivery checked.
       </p>
       <textarea
         ref={textareaRef}

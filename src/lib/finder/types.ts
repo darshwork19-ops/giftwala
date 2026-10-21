@@ -6,38 +6,80 @@ export interface MatchRequest {
   exclude?: string[];
   /** Overrides the budget read from the brief (used by "less expensive"). */
   budgetMax?: number;
+  /** "rules" skips AI ranking (used after an AI error, only when asked). */
+  mode?: "auto" | "rules";
 }
 
-export interface MatchCard {
+/**
+ * - results:   at least one validated listing or labelled gift idea.
+ * - no_match:  a real request, but nothing fits; nothing is shown.
+ * - follow_up: a gift request without enough to go on; one question asked.
+ * - nonsense / off_topic: not a gift request; no products shown.
+ * - ai_error:  the AI failed; nothing is shown instead of a generic list.
+ */
+export type FinderStatus = "results" | "no_match" | "follow_up" | "nonsense" | "off_topic" | "ai_error";
+
+/**
+ * Delivery status for a listing, never stronger than the data allows.
+ * - estimated:    destination and date given, the sample maker serves it and
+ *                 the sample lead time fits. Still an estimate, not a slot.
+ * - not_verified: destination or date missing, or the PIN can't be mapped.
+ */
+export interface DeliveryInfo {
+  status: "estimated" | "not_verified";
+  label: string;
+}
+
+/** A real record from the GIFTWALA (demo) catalogue. */
+export interface ListingCard {
+  kind: "listing";
   id: string;
   slug: string;
   name: string;
   price: number;
   image: { src: string; alt: string };
   maker: { name: string; slug: string; location: string };
-  arrival: string;
-  arrivalLabel: string;
   reason: string;
   personalisable: boolean;
+  delivery: DeliveryInfo;
+  /** Earliest estimated arrival (sample lead times), for pre-filling requests. */
+  arrival: string;
 }
 
-export interface MatchResponse {
-  /** "ai" when a model ranked and explained; "rules" for the keyword fallback. */
+/** A gift concept with no seller, price, stock or link behind it. */
+export interface IdeaCard {
+  kind: "idea";
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  reason: string;
+  lookFor: string[];
+  whereToFind: string;
+}
+
+export interface FinderResponse {
+  status: FinderStatus;
+  /** Shown for every status except plain results. */
+  message?: string;
+  followUp?: { question: string; suggestions: string[] };
+  /** "ai" only when a model ranked and explained the listings. */
   mode: "ai" | "rules";
-  /** Which AI provider made the picks, when mode is "ai". */
   provider?: "Gemini" | "Claude";
-  modeNote?: string;
   understood: {
     summary?: string;
     budgetMax?: number;
     date?: { iso: string; label: string };
-    area?: { name: string; zone: string };
+    destination?: { label: string; kind: "zone" | "region" | "outside" };
     recipient?: string;
     occasion?: string;
     interests: string[];
   };
-  matches: MatchCard[];
+  listings: ListingCard[];
+  ideas: IdeaCard[];
+  /** Explains what delivery checks were (and weren't) possible. */
+  deliveryNote?: string;
   excludedNote?: string;
-  /** Eligible gifts not shown yet. */
+  /** Relevant listings not shown yet ("show other ideas"). */
   remaining: number;
 }

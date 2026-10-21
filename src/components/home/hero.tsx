@@ -9,19 +9,19 @@ export function Hero() {
     <section aria-labelledby="hero-title" className="page-container pt-10 pb-4 sm:pt-14 sm:pb-12 lg:pt-16 lg:pb-20">
       <div className="grid gap-10 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-10">
         <div className="order-1 lg:order-none lg:self-end">
-          <p className="eyebrow mb-5">Handmade gifts from Mumbai makers</p>
+          <p className="eyebrow mb-5">Recipient-first gift discovery</p>
           <h1
             id="hero-title"
             className="font-serif text-[2.6rem] leading-[1.05] font-normal tracking-tight sm:text-6xl lg:text-[4.25rem]"
           >
-            It&apos;s not just a gift.{" "}
+            Know the person.{" "}
             <em className="text-burgundy not-italic sm:italic">
-              It&apos;s how you make them feel.
+              Find the gift that feels like them.
             </em>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted">
-            Thoughtful finds from independent makers, chosen with care and made
-            personal.
+            Tell us what makes them different. We&apos;ll help you find a gift
+            that fits, from cricket gear to handmade keepsakes.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export function Hero() {
           <p className="mt-4 text-sm">
             Rather browse?{" "}
             <ButtonLink href={routes.gifts} variant="ghost" className="align-baseline">
-              Explore all gifts
+              Explore gifts
             </ButtonLink>
           </p>
         </div>

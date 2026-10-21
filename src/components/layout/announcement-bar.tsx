@@ -5,7 +5,7 @@ export function AnnouncementBar() {
   return (
     <div className="bg-burgundy text-white">
       <p className="page-container py-2 text-center text-xs tracking-wide sm:text-[0.8rem]">
-        Describe who it&apos;s for and see three handmade gifts that can arrive in time.{" "}
+        Describe the person, not the product, and we&apos;ll suggest gifts that fit.{" "}
         <Link
           href={routes.giftFinder}
           className="font-medium underline underline-offset-4 hover:no-underline"

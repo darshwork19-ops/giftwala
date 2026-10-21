@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { formatPrice } from "@/lib/format";
-import type { MatchCard, MatchRequest, MatchResponse } from "@/lib/finder/types";
+import type { FinderResponse, IdeaCard, ListingCard, MatchRequest } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
 import { PenIcon, SparkIcon } from "@/components/ui/icons";
 import { DescribeBox } from "./describe-box";
@@ -16,15 +16,14 @@ type Refinement = "others" | "cheaper" | "handmade" | "unusual";
 const REFINEMENTS: { id: Refinement; label: string; clause?: string }[] = [
   { id: "others", label: "Show other ideas" },
   { id: "cheaper", label: "Less expensive" },
-  { id: "handmade", label: "More handmade", clause: "Prefer handmade, made-by-hand pieces." },
+  { id: "handmade", label: "More handmade", clause: "Prefer handmade pieces." },
   { id: "unusual", label: "Something more unusual", clause: "Prefer something unusual and unexpected." },
 ];
 
-type Result = { key: string } & ({ data: MatchResponse } | { error: string });
+type Result = { key: string } & ({ data: FinderResponse } | { error: string });
 
 export function FinderResults() {
-  const params = useSearchParams();
-  const brief = params.get("brief")?.trim() ?? "";
+  const brief = useSearchParams().get("brief")?.trim() ?? "";
   // A new description starts a fresh session (no carried-over refinements)
   return <FinderSession key={brief} brief={brief} />;
 }
@@ -35,18 +34,16 @@ function FinderSession({ brief }: { brief: string }) {
     clauses: [],
     exclude: [],
   });
+  const [mode, setMode] = useState<"auto" | "rules">("auto");
+  const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result>();
   const [editing, setEditing] = useState(false);
 
   const request: MatchRequest = useMemo(
-    () => ({
-      brief: [brief, ...refine.clauses].join(" "),
-      exclude: refine.exclude,
-      budgetMax: refine.budgetMax,
-    }),
-    [brief, refine],
+    () => ({ brief: [brief, ...refine.clauses].join(" "), exclude: refine.exclude, budgetMax: refine.budgetMax, mode }),
+    [brief, refine, mode],
   );
-  const key = JSON.stringify(request);
+  const key = `${JSON.stringify(request)}#${attempt}`;
 
   useEffect(() => {
     if (!brief) return;
@@ -54,7 +51,7 @@ function FinderSession({ brief }: { brief: string }) {
     fetch("/api/match", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: key,
+      body: JSON.stringify(request),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -62,10 +59,10 @@ function FinderSession({ brief }: { brief: string }) {
         setResult(res.ok ? { key, data: json } : { key, error: json.error ?? "Something went wrong." });
       })
       .catch((error) => {
-        if (error.name !== "AbortError") setResult({ key, error: "We couldn't reach the Gift Finder. Try again." });
+        if (error.name !== "AbortError") setResult({ key, error: "We couldn't reach the Gift Finder. Please try again." });
       });
     return () => controller.abort();
-  }, [brief, key]);
+  }, [brief, key, request]);
 
   if (!brief || editing) {
     return (
@@ -82,17 +79,17 @@ function FinderSession({ brief }: { brief: string }) {
 
   const loading = result?.key !== key;
   const data = !loading && result && "data" in result ? result.data : undefined;
-  const error = !loading && result && "error" in result ? result.error : undefined;
+  const fetchError = !loading && result && "error" in result ? result.error : undefined;
 
   const applyRefinement = (r: Refinement) => {
     if (!data) return;
-    const shown = data.matches.map((m) => m.id);
+    const shown = data.listings.map((m) => m.id);
     setRefine((prev) => {
       const next = { ...prev, exclude: [...prev.exclude, ...shown] };
       const option = REFINEMENTS.find((x) => x.id === r);
       if (option?.clause && !prev.clauses.includes(option.clause)) next.clauses = [...prev.clauses, option.clause];
-      if (r === "cheaper" && data.matches.length) {
-        next.budgetMax = Math.round(Math.min(...data.matches.map((m) => m.price)) * 0.95);
+      if (r === "cheaper" && data.listings.length) {
+        next.budgetMax = Math.round(Math.min(...data.listings.map((m) => m.price)) * 0.95);
         next.exclude = prev.exclude;
       }
       return next;
@@ -101,7 +98,6 @@ function FinderSession({ brief }: { brief: string }) {
 
   return (
     <div>
-      {/* The brief and what we understood from it */}
       <section aria-labelledby="brief-heading" className="rounded-lg border border-linen bg-white p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -115,88 +111,228 @@ function FinderSession({ brief }: { brief: string }) {
             onClick={() => setEditing(true)}
             className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm font-medium text-burgundy hover:underline"
           >
-            <PenIcon width={16} height={16} /> Edit description
+            <PenIcon width={16} height={16} /> Edit your description
           </button>
         </div>
-        {data && <Understood data={data} />}
+        {data && (data.status === "results" || data.status === "no_match") && <Understood data={data} />}
       </section>
 
       <div aria-live="polite" className="mt-10">
         {loading && <LoadingCards />}
-        {error && (
-          <p role="alert" className="rounded-md border border-berry/30 bg-blush px-4 py-3 text-sm text-berry">
-            {error}
-          </p>
+        {fetchError && (
+          <Notice tone="error" title="Something went wrong">
+            <p>{fetchError}</p>
+            <Button className="mt-4" onClick={() => setAttempt((a) => a + 1)}>Try again</Button>
+          </Notice>
         )}
-        {data && data.matches.length === 0 && <NoMatches data={data} />}
-        {data && data.matches.length > 0 && (
-          <>
-            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <h2 className="font-serif text-3xl tracking-tight">
-                {data.matches.length === 1 ? "One gift that fits" : `${data.matches.length} gifts that fit`}
-              </h2>
-              <p className="inline-flex items-center gap-1.5 text-xs text-muted">
-                <SparkIcon width={14} height={14} />
-                {data.mode === "ai"
-                  ? `Picked and explained by ${data.provider ?? "AI"} from eligible gifts`
-                  : "Picked by keyword matching"}
-              </p>
-            </div>
-            <ul className="grid gap-8 md:grid-cols-3">
-              {data.matches.map((match, i) => (
-                <li key={match.id}>
-                  <MatchCardView match={match} rank={i + 1} requestHref={requestHref(match, data)} />
-                </li>
-              ))}
-            </ul>
-            {data.modeNote && <p className="mt-6 text-sm text-muted">{data.modeNote}</p>}
-            {data.excludedNote && <p className="mt-2 text-sm text-muted">{data.excludedNote}</p>}
-
-            <div className="mt-10 border-t border-linen pt-6">
-              <p className="mb-3 text-sm font-medium">Not quite right?</p>
-              <div className="flex flex-wrap gap-2">
-                {REFINEMENTS.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => applyRefinement(r.id)}
-                    disabled={r.id === "others" && data.remaining === 0}
-                    className="rounded-full border border-charcoal/20 bg-white px-4 py-2 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50"
-                  >
-                    {r.label}
-                  </button>
-                ))}
-                {(refine.clauses.length > 0 || refine.exclude.length > 0 || refine.budgetMax) && (
-                  <button
-                    type="button"
-                    onClick={() => setRefine({ clauses: [], exclude: [] })}
-                    className="px-2 py-2 text-sm text-muted underline-offset-4 hover:underline"
-                  >
-                    Start over
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
+        {data && (
+          <Outcome
+            data={data}
+            brief={brief}
+            onEdit={() => setEditing(true)}
+            onRetry={() => setAttempt((a) => a + 1)}
+            onUseRules={() => setMode("rules")}
+            onRefine={applyRefinement}
+            refined={refine.clauses.length > 0 || refine.exclude.length > 0 || Boolean(refine.budgetMax)}
+            onResetRefine={() => setRefine({ clauses: [], exclude: [] })}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function Understood({ data }: { data: MatchResponse }) {
+interface OutcomeProps {
+  data: FinderResponse;
+  brief: string;
+  onEdit: () => void;
+  onRetry: () => void;
+  onUseRules: () => void;
+  onRefine: (r: Refinement) => void;
+  refined: boolean;
+  onResetRefine: () => void;
+}
+
+function Outcome({ data, brief, onEdit, onRetry, onUseRules, ...refineProps }: OutcomeProps) {
+  switch (data.status) {
+    case "nonsense":
+    case "off_topic":
+      return (
+        <Notice title={data.status === "nonsense" ? "We couldn't understand that" : "That's outside what we can help with"}>
+          <p>{data.message}</p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Button onClick={onEdit}>Edit your description</Button>
+            <ButtonLink href={routes.gifts} variant="secondary">Explore all gifts</ButtonLink>
+          </div>
+        </Notice>
+      );
+    case "follow_up":
+      return <FollowUp data={data} brief={brief} />;
+    case "ai_error":
+      return (
+        <Notice tone="error" title="Gift matching is unavailable right now">
+          <p>{data.message}</p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Button onClick={onRetry}>Try again</Button>
+            <Button variant="secondary" onClick={onUseRules}>Show keyword matches instead</Button>
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            Keyword matches use simple word matching against the catalogue, without AI explanations.
+          </p>
+        </Notice>
+      );
+    case "no_match":
+      return (
+        <Notice title="No strong match yet">
+          <p>{data.message}</p>
+          {data.deliveryNote && <p className="mt-2">{data.deliveryNote}</p>}
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Button onClick={onEdit}>Edit your description</Button>
+            <ButtonLink href={routes.gifts} variant="secondary">Explore all gifts</ButtonLink>
+          </div>
+        </Notice>
+      );
+    case "results":
+      return <Results data={data} {...refineProps} />;
+  }
+}
+
+function Results({ data, onRefine, refined, onResetRefine }: Pick<OutcomeProps, "data" | "onRefine" | "refined" | "onResetRefine">) {
+  const count = data.listings.length;
+  return (
+    <>
+      {data.message && <p className="mb-8 max-w-2xl text-muted">{data.message}</p>}
+
+      {count > 0 && (
+        <section aria-labelledby="listings-heading">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <h2 id="listings-heading" className="font-serif text-3xl tracking-tight">
+              {count === 1 ? "1 gift that fits" : `${count} gifts that fit`}
+            </h2>
+            <p className="inline-flex items-center gap-1.5 text-xs text-muted">
+              <SparkIcon width={14} height={14} />
+              {data.mode === "ai"
+                ? `Chosen and explained by ${data.provider ?? "AI"} from matching catalogue gifts`
+                : "Matched by keywords from your description"}
+            </p>
+          </div>
+          <ul className="grid gap-8 md:grid-cols-3">
+            {data.listings.map((listing, i) => (
+              <li key={listing.id}>
+                <ListingView listing={listing} rank={i + 1} requestHref={requestHref(listing, data)} />
+              </li>
+            ))}
+          </ul>
+          {data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
+          {data.deliveryNote && <p className="mt-2 text-sm text-muted">{data.deliveryNote}</p>}
+
+          <div className="mt-10 border-t border-linen pt-6">
+            <p className="mb-3 text-sm font-medium">Not quite right?</p>
+            <div className="flex flex-wrap gap-2">
+              {REFINEMENTS.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => onRefine(r.id)}
+                  disabled={r.id === "others" && data.remaining === 0}
+                  className="rounded-full border border-charcoal/20 bg-white px-4 py-2 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50"
+                >
+                  {r.label}
+                </button>
+              ))}
+              {refined && (
+                <button type="button" onClick={onResetRefine} className="px-2 py-2 text-sm text-muted underline-offset-4 hover:underline">
+                  Start over
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {data.ideas.length > 0 && (
+        <section aria-labelledby="ideas-heading" className={count > 0 ? "mt-16" : ""}>
+          <h2 id="ideas-heading" className="font-serif text-3xl tracking-tight">Gift ideas to look for</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Ideas, not listings: GIFTWALA doesn&apos;t sell these, and no price, stock, seller or delivery has been
+            checked. Use them as a starting point wherever you shop.
+          </p>
+          <ul className="mt-6 grid gap-5 md:grid-cols-2">
+            {data.ideas.map((idea) => (
+              <li key={idea.id}>
+                <IdeaView idea={idea} />
+              </li>
+            ))}
+          </ul>
+          {count === 0 && data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
+        </section>
+      )}
+    </>
+  );
+}
+
+function FollowUp({ data, brief }: { data: FinderResponse; brief: string }) {
+  const router = useRouter();
+  const [answer, setAnswer] = useState("");
+  // The answer is added to the original description, so nothing is lost
+  const extend = (more: string) => router.push(routes.giftFinderFor(`${brief.replace(/[.\s]+$/, "")}. ${more}`));
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (answer.trim()) extend(answer.trim());
+  };
+  return (
+    <Notice title={data.followUp?.question ?? "Tell us a bit more"}>
+      <p>{data.message}</p>
+      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <label htmlFor="follow-up" className="sr-only">Your answer</label>
+        <input
+          id="follow-up"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="e.g. Plays badminton and loves cars"
+          className="h-11 min-w-0 flex-1 rounded-md border border-linen bg-white px-3 text-sm text-charcoal focus:border-burgundy"
+        />
+        <Button type="submit">Add this</Button>
+      </form>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label="Suggestions">
+        {data.followUp?.suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => extend(s)}
+            className="rounded-full border border-linen bg-white px-3 py-1.5 text-sm text-muted hover:border-burgundy hover:text-burgundy"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </Notice>
+  );
+}
+
+function Notice({ title, tone = "info", children }: { title: string; tone?: "info" | "error"; children: React.ReactNode }) {
+  return (
+    <div
+      role={tone === "error" ? "alert" : undefined}
+      className={`max-w-2xl rounded-lg border bg-white p-6 ${tone === "error" ? "border-berry/40" : "border-linen"}`}
+    >
+      <h2 className={`font-serif text-2xl ${tone === "error" ? "text-berry" : ""}`}>{title}</h2>
+      <div className="mt-2 text-sm text-muted">{children}</div>
+    </div>
+  );
+}
+
+function Understood({ data }: { data: FinderResponse }) {
   const u = data.understood;
   const chips = [
     u.recipient && `For: ${u.recipient}`,
     u.occasion && `Occasion: ${u.occasion}`,
     u.budgetMax !== undefined && `Up to ${formatPrice(u.budgetMax)}`,
-    u.date && `Arrives by ${u.date.label}`,
-    u.area && `${u.area.name} · ${u.area.zone}`,
+    u.date && `By ${u.date.label}`,
+    u.destination && u.destination.label,
     ...u.interests,
   ].filter(Boolean) as string[];
-  const missing = [!u.budgetMax && "a budget", !u.date && "a date", !u.area && "a Mumbai area"].filter(
-    Boolean,
-  ) as string[];
+  const missing = [!u.destination && "a Mumbai area or PIN", !u.date && "a date"].filter(Boolean) as string[];
 
   return (
     <div className="mt-4 border-t border-linen pt-4">
@@ -210,32 +346,31 @@ function Understood({ data }: { data: MatchResponse }) {
           ))}
         </ul>
       )}
-      {missing.length > 0 && (
-        <p className="mt-3 text-xs text-muted">
-          Add {missing.join(", ").replace(/, ([^,]*)$/, " and $1")} to check price, timing and delivery.
-        </p>
+      {missing.length > 0 && data.listings.length > 0 && (
+        <p className="mt-3 text-xs text-muted">Add {missing.join(" and ")} to check delivery for catalogue gifts.</p>
       )}
     </div>
   );
 }
 
-/** The request form opens pre-filled with the date and area from the brief. */
-function requestHref(match: MatchCard, data: MatchResponse): string {
+/** The request form opens pre-filled with the date and Mumbai area from the brief. */
+function requestHref(listing: ListingCard, data: FinderResponse): string {
   const q = new URLSearchParams();
   if (data.understood.date) q.set("date", data.understood.date.iso);
-  if (data.understood.area) q.set("area", data.understood.area.name);
+  if (data.understood.destination?.kind === "zone") q.set("area", data.understood.destination.label.split(" · ")[0]);
   const query = q.toString();
-  return routes.requestGift(match.slug) + (query ? `?${query}` : "");
+  return routes.requestGift(listing.slug) + (query ? `?${query}` : "");
 }
 
-function MatchCardView({ match, rank, requestHref }: { match: MatchCard; rank: number; requestHref: string }) {
+function ListingView({ listing, rank, requestHref }: { listing: ListingCard; rank: number; requestHref: string }) {
+  const estimated = listing.delivery.status === "estimated";
   return (
     <article className="flex h-full flex-col">
-      <Link href={routes.product(match.slug)} className="group block">
-        <div className="relative aspect-[4/3] md:aspect-[4/5] overflow-hidden rounded-md bg-linen">
+      <Link href={routes.product(listing.slug)} className="group block">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-linen md:aspect-[4/5]">
           <GiftImage
-            src={match.image.src}
-            alt={match.image.alt}
+            src={listing.image.src}
+            alt={listing.image.alt}
             sizes="(min-width: 768px) 33vw, 100vw"
             preload={rank === 1}
             className="transition-transform duration-500 ease-out group-hover:scale-[1.03]"
@@ -243,29 +378,24 @@ function MatchCardView({ match, rank, requestHref }: { match: MatchCard; rank: n
         </div>
       </Link>
       <div className="flex flex-1 flex-col pt-4">
-        <Link
-          href={routes.maker(match.maker.slug)}
-          className="self-start text-xs tracking-wide text-muted uppercase hover:text-burgundy"
-        >
-          {match.maker.name} · {match.maker.location.replace(", Mumbai", "")}
-        </Link>
+        <p className="text-xs text-muted">
+          <span className="font-medium text-charcoal">GIFTWALA listing</span> · sample maker{" "}
+          <Link href={routes.maker(listing.maker.slug)} className="hover:text-burgundy">
+            {listing.maker.name}
+          </Link>
+        </p>
         <h3 className="mt-1.5 font-serif text-xl leading-snug">
-          <Link href={routes.product(match.slug)} className="hover:text-burgundy">
-            {match.name}
+          <Link href={routes.product(listing.slug)} className="hover:text-burgundy">
+            {listing.name}
           </Link>
         </h3>
-        <p className="mt-2 text-sm">{match.reason}</p>
-        <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          <div className="flex gap-1">
-            <dt className="sr-only">Price</dt>
-            <dd className="font-semibold">{formatPrice(match.price)}</dd>
-          </div>
-          <div className="flex gap-1 text-sage">
-            <dt>Can arrive by</dt>
-            <dd className="font-medium">{match.arrivalLabel}</dd>
-          </div>
-        </dl>
-        {match.personalisable && (
+        <p className="mt-2 text-sm">{listing.reason}</p>
+        <p className="mt-3 text-sm font-semibold">{formatPrice(listing.price)}</p>
+        <p className={`mt-1 text-xs ${estimated ? "text-sage" : "text-muted"}`}>
+          <span aria-hidden="true">{estimated ? "✓ " : "ⓘ "}</span>
+          {listing.delivery.label}
+        </p>
+        {listing.personalisable && (
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-burgundy">
             <PenIcon width={14} height={14} /> Personalisable
           </p>
@@ -280,34 +410,37 @@ function MatchCardView({ match, rank, requestHref }: { match: MatchCard; rank: n
   );
 }
 
+function IdeaView({ idea }: { idea: IdeaCard }) {
+  return (
+    <article className="h-full rounded-lg border border-dashed border-terracotta bg-white p-5">
+      <p className="text-xs font-semibold tracking-[0.12em] text-muted uppercase">Gift idea · {idea.category}</p>
+      <h3 className="mt-2 font-serif text-xl leading-snug">{idea.title}</h3>
+      <p className="mt-2 text-sm">{idea.summary}</p>
+      <p className="mt-2 text-xs text-muted">{idea.reason}</p>
+      <h4 className="mt-4 text-xs font-semibold">Before you buy, check</h4>
+      <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-muted">
+        {idea.lookFor.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-muted">Usually found at: {idea.whereToFind}</p>
+    </article>
+  );
+}
+
 function LoadingCards() {
   return (
     <div>
-      <p className="mb-6 text-sm text-muted">Reading your description and checking what can arrive in time…</p>
+      <p className="mb-6 text-sm text-muted">Reading your description and checking the catalogue…</p>
       <ul className="grid gap-8 md:grid-cols-3" aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <li key={i} className="animate-pulse">
             <div className="aspect-[4/5] rounded-md bg-linen" />
             <div className="mt-4 h-3 w-1/3 rounded bg-linen" />
             <div className="mt-3 h-5 w-2/3 rounded bg-linen" />
-            <div className="mt-3 h-3 w-full rounded bg-linen" />
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function NoMatches({ data }: { data: MatchResponse }) {
-  return (
-    <div className="rounded-lg border border-linen bg-white p-6">
-      <h2 className="font-serif text-2xl">Nothing fits all of that yet</h2>
-      <p className="mt-2 text-sm text-muted">
-        {data.excludedNote ?? "No gifts matched."} Try a later date, a higher budget or a nearby area.
-      </p>
-      <ButtonLink href={routes.gifts} variant="secondary" className="mt-5">
-        Browse all gifts
-      </ButtonLink>
     </div>
   );
 }
