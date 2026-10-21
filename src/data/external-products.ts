@@ -9,8 +9,9 @@
  * GIFTWALA has no partnership, feed or checkout with these shops: stock,
  * delivery, payment and returns are handled entirely by the shop.
  *
- * Product photos are the shops' own images, shown with the site owner's
- * decision to use them; confirm permission with each shop before launch.
+ * Product photos are the shops' own images. Permission to use photos from The
+ * Drunken Mug and Decathlon India was confirmed by the site owner on
+ * 21 Oct 2026. For the other shops, confirm permission before launch.
  * Items marked `adultsOnly` carry liquor branding and are only suggested for
  * adult recipients.
  */

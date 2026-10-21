@@ -118,8 +118,9 @@ switchable on the results page:
 
 Only in-stock items whose product page opened were kept. There is no
 affiliate link, partnership or live sync: prices and stock can change, so
-cards show the "checked on" date and link to the shop. Product photos are the shops' own;
-confirm permission with each shop before launch. Liquor-branded barware is
+cards show the "checked on" date and link to the shop. Product photos are the shops' own:
+permission was confirmed for The Drunken Mug and Decathlon India (21 Oct 2026);
+confirm it for the other seven shops before launch. Liquor-branded barware is
 only suggested when the brief mentions drinks and never for a child.
 
 ### Gift box
