@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist } from "next/font/google";
+import { DM_Sans, Instrument_Serif } from "next/font/google";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Clean, warm sans for body text and controls
+const bodySans = DM_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-// Editorial serif for headlines
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Refined editorial serif for headlines
+const displaySerif = Instrument_Serif({
+  variable: "--font-display",
   subsets: ["latin"],
-  axes: ["SOFT", "opsz"],
+  weight: "400",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en-IN"
-      className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${bodySans.variable} ${displaySerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <a

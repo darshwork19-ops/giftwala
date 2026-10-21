@@ -22,8 +22,8 @@
   --color-muted: #5e5650;
 
   /* Typography */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display), ui-serif, Georgia, serif;
 
   /* Radius scale — kept small for an editorial feel */
   --radius-sm: 0.25rem;

@@ -1,58 +1,50 @@
+import Link from "next/link";
 import { unsplash } from "@/lib/images";
 import { routes } from "@/lib/routes";
-import { ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
-import { DescribeBox } from "@/components/finder/describe-box";
+import { HeroSearch } from "./hero-search";
 
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="page-container pt-10 pb-4 sm:pt-14 sm:pb-12 lg:pt-16 lg:pb-20">
-      <div className="grid gap-10 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-10">
-        <div className="order-1 lg:order-none lg:self-end">
-          <p className="eyebrow mb-5">Recipient-first gift discovery</p>
+    <section aria-labelledby="hero-title" className="page-container pt-12 pb-16 sm:pt-16 lg:pt-20 lg:pb-24">
+      <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
+        <div>
+          <p className="mb-6 text-sm tracking-wide text-muted">Gift discovery, made personal</p>
           <h1
             id="hero-title"
-            className="font-serif text-[2.6rem] leading-[1.05] font-normal tracking-tight sm:text-6xl lg:text-[4.25rem]"
+            className="font-serif text-[3rem] leading-[1.02] tracking-tight sm:text-7xl lg:text-[5.5rem]"
           >
-            Know the person.{" "}
-            <em className="text-burgundy not-italic sm:italic">
-              Find the gift that feels like them.
-            </em>
+            Know the person.
+            <br />
+            <span className="text-burgundy italic">Find the gift that feels like them.</span>
           </h1>
-          <p className="mt-6 max-w-lg text-lg text-muted">
-            Tell us what makes them different. We&apos;ll help you find a gift
-            that fits, from cricket gear to handmade keepsakes.
+          <p className="mt-6 max-w-md text-lg text-muted">
+            Tell us what makes them different. We&apos;ll help you find a gift that fits.
+          </p>
+
+          <HeroSearch />
+
+          <p className="mt-6 text-sm text-muted">
+            Or{" "}
+            <Link href={routes.gifts} className="text-charcoal underline underline-offset-4 hover:text-burgundy">
+              explore gifts
+            </Link>{" "}
+            ·{" "}
+            <Link href={routes.giftBox} className="text-charcoal underline underline-offset-4 hover:text-burgundy">
+              build a gift box
+            </Link>
           </p>
         </div>
 
-        <div className="relative order-3 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <div
-            aria-hidden="true"
-            className="absolute -right-3 -bottom-3 hidden h-full w-full rounded-lg border border-terracotta/70 sm:block lg:-right-5 lg:-bottom-5"
-          />
-          <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-linen sm:aspect-[5/4] lg:aspect-auto lg:h-full lg:min-h-[32rem]">
+        <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-linen">
             <GiftImage
-              src={unsplash("photo-1509024102370-fd7802f4a7a7")}
-              alt="A book wrapped in grey paper and tied with a red ribbon, beside a lit tealight candle"
-              sizes="(min-width: 1024px) 50vw, 100vw"
+              src={unsplash("photo-1788713756143-fcfc915940f0")}
+              alt="A hand holding a small brown-paper parcel tied with twine and a red seal"
+              sizes="(min-width: 1024px) 40vw, 90vw"
               preload
             />
           </div>
-        </div>
-
-        {/* Under the headline: above the image on phones, beside it on desktop */}
-        <div className="order-2 lg:order-none lg:col-start-1 lg:row-start-2">
-          <DescribeBox size="lg" />
-          <p className="mt-4 text-sm">
-            Rather browse?{" "}
-            <ButtonLink href={routes.gifts} variant="ghost" className="align-baseline">
-              Explore gifts
-            </ButtonLink>{" "}
-            or{" "}
-            <ButtonLink href={routes.giftBox} variant="ghost" className="align-baseline">
-              mix and match a gift box
-            </ButtonLink>
-          </p>
         </div>
       </div>
     </section>

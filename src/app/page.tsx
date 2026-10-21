@@ -1,21 +1,15 @@
-import { CuratedGifts } from "@/components/home/curated-gifts";
 import { Hero } from "@/components/home/hero";
 import { HowItWorks } from "@/components/home/how-it-works";
-import { MakersIntro } from "@/components/home/makers-intro";
-import { OccasionGrid } from "@/components/home/occasion-grid";
-import { PersonaliseIntro } from "@/components/home/personalise-intro";
-import { TrustSection } from "@/components/home/trust-section";
+import { MumbaiMakers } from "@/components/home/mumbai-makers";
+import { OccasionLinks } from "@/components/home/occasion-links";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <OccasionGrid />
-      <CuratedGifts />
-      <MakersIntro />
+      <OccasionLinks />
+      <MumbaiMakers />
       <HowItWorks />
-      <PersonaliseIntro />
-      <TrustSection />
     </>
   );
 }
