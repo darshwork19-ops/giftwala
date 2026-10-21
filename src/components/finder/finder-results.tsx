@@ -7,9 +7,8 @@ import { formatPrice } from "@/lib/format";
 import { formatShortDate } from "@/lib/finder/dates";
 import type { ExternalCard, FinderResponse, IdeaCard, ListingCard, MakerCard, MatchRequest } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
-import { Button, ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
-import { PenIcon, SparkIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, PenIcon, SparkIcon } from "@/components/ui/icons";
 import { DescribeBox, type FinderView } from "./describe-box";
 
 type Refinement = "others" | "cheaper" | "handmade" | "unusual";
@@ -22,6 +21,14 @@ const REFINEMENTS: { id: Refinement; label: string; clause?: string }[] = [
 ];
 
 type Result = { key: string } & ({ data: FinderResponse } | { error: string });
+
+// Shared pill styles, matching the homepage search
+const primaryPill =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-burgundy px-5 text-sm font-medium text-white transition-colors hover:bg-burgundy-hover";
+const secondaryPill =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-charcoal/20 px-5 text-sm font-medium text-charcoal transition-colors hover:border-burgundy hover:text-burgundy";
+const textLink =
+  "inline-flex items-center gap-1.5 text-sm font-medium text-charcoal underline decoration-linen underline-offset-4 transition-colors hover:text-burgundy hover:decoration-burgundy";
 
 export function FinderResults() {
   const params = useSearchParams();
@@ -72,10 +79,10 @@ function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
 
   if (!brief || editing) {
     return (
-      <div className="max-w-2xl">
-        <DescribeBox defaultValue={brief} defaultView={view} size="lg" />
+      <div>
+        <DescribeBox defaultValue={brief} defaultView={view} />
         {editing && (
-          <button type="button" onClick={() => setEditing(false)} className="mt-3 text-sm text-muted hover:text-burgundy">
+          <button type="button" onClick={() => setEditing(false)} className={`mt-6 ${textLink} text-muted`}>
             Cancel
           </button>
         )}
@@ -104,31 +111,27 @@ function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
 
   return (
     <div>
-      <section aria-labelledby="brief-heading" className="rounded-lg border border-linen bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 id="brief-heading" className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">
-              You told us
-            </h2>
-            <p className="mt-1 font-serif text-xl">“{brief}”</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm font-medium text-burgundy hover:underline"
-          >
-            <PenIcon width={16} height={16} /> Edit your description
-          </button>
-        </div>
+      <section aria-labelledby="brief-heading" className="max-w-3xl border-l-2 border-terracotta pl-5 sm:pl-6">
+        <h2 id="brief-heading" className="text-sm text-muted">
+          You told us
+        </h2>
+        <p className="mt-1 font-serif text-2xl leading-snug italic sm:text-[1.75rem]">“{brief}”</p>
+        <button type="button" onClick={() => setEditing(true)} className={`mt-3 ${textLink}`}>
+          <PenIcon width={15} height={15} /> Edit your description
+        </button>
         {data && (data.status === "results" || data.status === "no_match") && <Understood data={data} />}
       </section>
 
-      <div aria-live="polite" className="mt-10">
+      <div aria-live="polite" className="mt-12">
         {loading && <LoadingCards />}
         {fetchError && (
           <Notice tone="error" title="Something went wrong">
             <p>{fetchError}</p>
-            <Button className="mt-4" onClick={() => setAttempt((a) => a + 1)}>Try again</Button>
+            <div className="mt-5">
+              <button type="button" className={primaryPill} onClick={() => setAttempt((a) => a + 1)}>
+                Try again
+              </button>
+            </div>
           </Notice>
         )}
         {data && (
@@ -170,10 +173,7 @@ function Outcome({ data, brief, view, onViewChange, onEdit, onRetry, onUseRules,
       return (
         <Notice title={data.status === "nonsense" ? "We couldn't understand that" : "That's outside what we can help with"}>
           <p>{data.message}</p>
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <Button onClick={onEdit}>Edit your description</Button>
-            <ButtonLink href={routes.gifts} variant="secondary">Explore all gifts</ButtonLink>
-          </div>
+          <NoticeActions onEdit={onEdit} />
         </Notice>
       );
     case "follow_up":
@@ -182,11 +182,15 @@ function Outcome({ data, brief, view, onViewChange, onEdit, onRetry, onUseRules,
       return (
         <Notice tone="error" title="Gift matching is unavailable right now">
           <p>{data.message}</p>
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <Button onClick={onRetry}>Try again</Button>
-            <Button variant="secondary" onClick={onUseRules}>Show keyword matches instead</Button>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button type="button" className={primaryPill} onClick={onRetry}>
+              Try again
+            </button>
+            <button type="button" className={secondaryPill} onClick={onUseRules}>
+              Show keyword matches instead
+            </button>
           </div>
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-3 text-xs">
             Keyword matches use simple word matching against the catalogue, without AI explanations.
           </p>
         </Notice>
@@ -196,15 +200,25 @@ function Outcome({ data, brief, view, onViewChange, onEdit, onRetry, onUseRules,
         <Notice title="No strong match yet">
           <p>{data.message}</p>
           {data.deliveryNote && <p className="mt-2">{data.deliveryNote}</p>}
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <Button onClick={onEdit}>Edit your description</Button>
-            <ButtonLink href={routes.gifts} variant="secondary">Explore all gifts</ButtonLink>
-          </div>
+          <NoticeActions onEdit={onEdit} />
         </Notice>
       );
     case "results":
       return <Results data={data} view={view} onViewChange={onViewChange} {...refineProps} />;
   }
+}
+
+function NoticeActions({ onEdit }: { onEdit: () => void }) {
+  return (
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <button type="button" className={primaryPill} onClick={onEdit}>
+        Edit your description
+      </button>
+      <Link href={routes.gifts} className={secondaryPill}>
+        Explore all gifts
+      </Link>
+    </div>
+  );
 }
 
 function Results({
@@ -220,7 +234,7 @@ function Results({
 
   return (
     <>
-      <div role="tablist" aria-label="What to show" className="mb-8 inline-flex rounded-md border border-linen bg-white p-1">
+      <div role="tablist" aria-label="What to show" className="mb-12 flex gap-8 border-b border-linen">
         {(
           [
             { id: "buy", label: "Things you can buy", count: buyCount },
@@ -233,9 +247,9 @@ function Results({
             role="tab"
             aria-selected={view === tab.id}
             onClick={() => onViewChange(tab.id)}
-            className="rounded px-4 py-2 text-sm font-medium text-muted transition-colors aria-selected:bg-burgundy aria-selected:text-white"
+            className="-mb-px border-b-2 border-transparent pb-3 text-[0.95rem] text-muted transition-colors hover:text-charcoal aria-selected:border-burgundy aria-selected:text-charcoal"
           >
-            {tab.label} <span className="opacity-80">({tab.count})</span>
+            {tab.label} <span className="text-sm text-muted">({tab.count})</span>
           </button>
         ))}
       </div>
@@ -249,6 +263,17 @@ function Results({
   );
 }
 
+function SectionHeading({ id, title, children }: { id: string; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="mb-8 max-w-2xl">
+      <h2 id={id} className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+        {title}
+      </h2>
+      {children && <div className="mt-3 text-sm text-muted">{children}</div>}
+    </div>
+  );
+}
+
 function BuyView({
   data,
   onSwitch,
@@ -258,6 +283,8 @@ function BuyView({
 }: Pick<OutcomeProps, "data" | "onRefine" | "refined" | "onResetRefine"> & { onSwitch: () => void }) {
   const count = data.listings.length;
   const nothingToBuy = count === 0 && data.external.length === 0 && data.makers.length === 0;
+  // Every section after the first is set off by a thin rule
+  const spaced = "mt-16 border-t border-linen pt-14";
 
   return (
     <>
@@ -265,93 +292,98 @@ function BuyView({
         <Notice title="Nothing to buy matches yet">
           <p>Nothing in the GIFTWALA catalogue, our online shops or our Mumbai makers fits this description yet.</p>
           {data.ideas.length > 0 && (
-            <Button className="mt-4" onClick={onSwitch}>
-              See {data.ideas.length} gift {data.ideas.length === 1 ? "idea" : "ideas"} instead
-            </Button>
+            <div className="mt-6">
+              <button type="button" className={primaryPill} onClick={onSwitch}>
+                See {data.ideas.length} gift {data.ideas.length === 1 ? "idea" : "ideas"} instead
+              </button>
+            </div>
           )}
         </Notice>
       )}
 
       {count > 0 && (
         <section aria-labelledby="listings-heading">
-          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <h2 id="listings-heading" className="font-serif text-3xl tracking-tight">
-              {count === 1 ? "1 gift from GIFTWALA" : `${count} gifts from GIFTWALA`}
-            </h2>
-            <p className="inline-flex items-center gap-1.5 text-xs text-muted">
-              <SparkIcon width={14} height={14} />
+          <SectionHeading id="listings-heading" title={count === 1 ? "1 gift from GIFTWALA" : `${count} gifts from GIFTWALA`}>
+            <p className="inline-flex items-center gap-1.5">
+              <SparkIcon width={14} height={14} className="text-terracotta" />
               {data.mode === "ai"
                 ? `Chosen and explained by ${data.provider ?? "AI"} from matching catalogue gifts`
                 : "Matched by keywords from your description"}
             </p>
-          </div>
-          <ul className="grid gap-8 md:grid-cols-3">
+          </SectionHeading>
+          <ul className="grid gap-x-8 gap-y-12 md:grid-cols-3">
             {data.listings.map((listing, i) => (
               <li key={listing.id}>
                 <ListingView listing={listing} rank={i + 1} requestHref={requestHref(listing, data)} />
               </li>
             ))}
           </ul>
-          {data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
-          {data.deliveryNote && <p className="mt-2 text-sm text-muted">{data.deliveryNote}</p>}
+          {(data.excludedNote || data.deliveryNote) && (
+            <div className="mt-8 space-y-1 text-sm text-muted">
+              {data.excludedNote && <p>{data.excludedNote}</p>}
+              {data.deliveryNote && <p>{data.deliveryNote}</p>}
+            </div>
+          )}
 
-          <div className="mt-8 flex flex-col gap-4 border-t border-linen pt-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mt-10 flex flex-col gap-6 rounded-[1.25rem] bg-linen/50 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="mb-3 text-sm font-medium">Not quite right?</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="font-serif text-xl">Not quite right?</p>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {REFINEMENTS.map((r) => (
                   <button
                     key={r.id}
                     type="button"
                     onClick={() => onRefine(r.id)}
                     disabled={r.id === "others" && data.remaining === 0}
-                    className="rounded-full border border-charcoal/20 bg-white px-4 py-2 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50"
+                    className="rounded-full border border-charcoal/15 bg-ivory px-3.5 py-1.5 text-sm transition-colors hover:border-burgundy hover:text-burgundy disabled:opacity-50 disabled:hover:border-charcoal/15 disabled:hover:text-charcoal"
                   >
                     {r.label}
                   </button>
                 ))}
                 {refined && (
-                  <button type="button" onClick={onResetRefine} className="px-2 py-2 text-sm text-muted underline-offset-4 hover:underline">
+                  <button type="button" onClick={onResetRefine} className={`px-2 ${textLink} text-muted`}>
                     Start over
                   </button>
                 )}
               </div>
             </div>
-            <ButtonLink href={routes.giftBox} variant="secondary" className="shrink-0">
-              Mix and match a gift box
-            </ButtonLink>
+            <Link href={routes.giftBox} className={`${textLink} shrink-0`}>
+              Mix and match a gift box <ArrowRightIcon width={15} height={15} />
+            </Link>
           </div>
         </section>
       )}
 
       {data.external.length > 0 && (
-        <section aria-labelledby="external-heading" className={count > 0 ? "mt-16" : ""}>
-          <h2 id="external-heading" className="font-serif text-3xl tracking-tight">From online shops</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Sold by the shop, not GIFTWALA. Prices are as we last checked them; stock, delivery, payment and returns
-            are handled by the shop.
-          </p>
-          <ul className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <section aria-labelledby="external-heading" className={count > 0 ? spaced : ""}>
+          <SectionHeading id="external-heading" title="From online shops">
+            <p>
+              Sold by the shop, not GIFTWALA. Prices are as we last checked them; stock, delivery, payment and returns
+              are handled by the shop.
+            </p>
+          </SectionHeading>
+          <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
             {data.external.map((product) => (
               <li key={product.id}>
                 <ExternalView product={product} />
               </li>
             ))}
           </ul>
-          {count === 0 && data.excludedNote && <p className="mt-6 text-sm text-muted">{data.excludedNote}</p>}
+          {count === 0 && data.excludedNote && <p className="mt-8 text-sm text-muted">{data.excludedNote}</p>}
         </section>
       )}
 
       {data.makers.length > 0 && (
-        <section aria-labelledby="makers-heading" className={count > 0 || data.external.length > 0 ? "mt-16" : ""}>
-          <h2 id="makers-heading" className="font-serif text-3xl tracking-tight">Independent Mumbai makers</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Small gifting businesses that take orders on Instagram. We checked that each is active with genuine
-            engagement, but they don&apos;t list prices, so ask about price and delivery when you message them.
-          </p>
-          <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <section aria-labelledby="makers-heading" className={count > 0 || data.external.length > 0 ? spaced : ""}>
+          <SectionHeading id="makers-heading" title="Independent Mumbai makers">
+            <p>
+              Small gifting businesses that take orders on Instagram. We checked that each is active with genuine
+              engagement, but they don&apos;t list prices, so ask about price and delivery when you message them.
+            </p>
+          </SectionHeading>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.makers.map((maker) => (
-              <li key={maker.id}>
+              <li key={maker.id} className="rounded-[1rem] border border-linen bg-white/50">
                 <MakerView maker={maker} budgetMax={data.understood.budgetMax} />
               </li>
             ))}
@@ -360,12 +392,11 @@ function BuyView({
       )}
 
       {data.popular.length > 0 && (
-        <section aria-labelledby="popular-heading" className="mt-16 border-t border-linen pt-12">
-          <h2 id="popular-heading" className="font-serif text-2xl tracking-tight">Popular gifts anyone would enjoy</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Well-loved gifts from the GIFTWALA catalogue. These aren&apos;t matched to your description.
-          </p>
-          <ul className="mt-6 grid grid-cols-2 gap-6 lg:grid-cols-4">
+        <section aria-labelledby="popular-heading" className={nothingToBuy ? "mt-16" : spaced}>
+          <SectionHeading id="popular-heading" title="Popular gifts anyone would enjoy">
+            <p>Well-loved gifts from the GIFTWALA catalogue. These aren&apos;t matched to your description.</p>
+          </SectionHeading>
+          <ul className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
             {data.popular.map((listing) => (
               <li key={listing.id}>
                 <ListingView listing={listing} rank={9} requestHref={requestHref(listing, data)} compact />
@@ -384,24 +415,27 @@ function IdeasView({ data, onSwitch, buyCount }: { data: FinderResponse; onSwitc
       <Notice title="No gift ideas for this one">
         <p>We don&apos;t have ideas that match this description yet.</p>
         {buyCount > 0 && (
-          <Button className="mt-4" onClick={onSwitch}>
-            See {buyCount} {buyCount === 1 ? "thing" : "things"} you can buy
-          </Button>
+          <div className="mt-6">
+            <button type="button" className={primaryPill} onClick={onSwitch}>
+              See {buyCount} {buyCount === 1 ? "thing" : "things"} you can buy
+            </button>
+          </div>
         )}
       </Notice>
     );
   }
   return (
     <section aria-labelledby="ideas-heading">
-      <h2 id="ideas-heading" className="font-serif text-3xl tracking-tight">Gift ideas to look for</h2>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
-        Ideas, not listings: no price, stock, seller or delivery has been checked. Use them as a starting point
-        wherever you shop.
-      </p>
-      <ul className="mt-6 grid gap-5 md:grid-cols-2">
-        {data.ideas.map((idea) => (
-          <li key={idea.id}>
-            <IdeaView idea={idea} />
+      <SectionHeading id="ideas-heading" title="Gift ideas to look for">
+        <p>
+          Ideas, not listings: no price, stock, seller or delivery has been checked. Use them as a starting point
+          wherever you shop.
+        </p>
+      </SectionHeading>
+      <ul className="grid gap-4 md:grid-cols-2">
+        {data.ideas.map((idea, i) => (
+          <li key={idea.id} className="rounded-[1rem] border border-linen bg-white/50">
+            <IdeaView idea={idea} number={i + 1} />
           </li>
         ))}
       </ul>
@@ -415,38 +449,26 @@ function MakerView({ maker, budgetMax }: { maker: MakerCard; budgetMax?: number 
       ? `likes hidden, ~${Math.round(maker.avgComments)} comments per post`
       : `~${Math.round(maker.medianLikes)} likes, ~${Math.round(maker.avgComments)} comments per post`;
   return (
-    <article className="flex h-full flex-col rounded-lg border border-linen bg-white p-5">
-      <div className="flex items-start gap-3">
-        <span
-          aria-hidden="true"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush font-serif text-lg text-burgundy"
-        >
-          {maker.name.charAt(0)}
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs text-muted">
-            <span className="font-medium text-charcoal">Instagram maker</span> · Mumbai
-          </p>
-          <h3 className="font-serif text-xl leading-snug">{maker.name}</h3>
-          <p className="truncate text-sm text-burgundy">@{maker.handle}</p>
-        </div>
+    <article className="flex h-full flex-col p-6">
+      <p className="text-xs text-muted">Instagram maker · Mumbai</p>
+      <h3 className="mt-2 font-serif text-2xl leading-snug">{maker.name}</h3>
+      <p className="mt-0.5 truncate text-sm text-burgundy">@{maker.handle}</p>
+      <p className="mt-4 text-sm">{maker.makes}</p>
+      <p className="mt-2 text-sm text-muted">{maker.reason}</p>
+      <div className="mt-auto space-y-1 pt-5 text-xs text-muted">
+        <p>
+          {maker.followers.toLocaleString("en-IN")} followers · {engagement} · checked {formatShortDate(maker.checkedOn)}
+        </p>
+        <p>
+          {budgetMax !== undefined
+            ? `No price listed — ask if it fits your ${formatPrice(budgetMax)} budget.`
+            : "No price listed — ask the maker."}{" "}
+          Delivery isn&apos;t checked by GIFTWALA.
+        </p>
       </div>
-      <p className="mt-3 text-sm">{maker.makes}</p>
-      <p className="mt-2 text-xs text-muted">{maker.reason}</p>
-      <p className="mt-3 text-xs text-muted">
-        {maker.followers.toLocaleString("en-IN")} followers · {engagement} · checked {formatShortDate(maker.checkedOn)}
-      </p>
-      <p className="mt-1 text-xs text-muted">
-        {budgetMax !== undefined
-          ? `No price listed — ask if it fits your ${formatPrice(budgetMax)} budget.`
-          : "No price listed — ask the maker."}{" "}
-        Delivery isn&apos;t checked by GIFTWALA.
-      </p>
-      <div className="mt-auto pt-4">
-        <ButtonLink href={maker.url} target="_blank" rel="noopener noreferrer" variant="secondary" className="w-full">
-          Message on Instagram ↗
-        </ButtonLink>
-      </div>
+      <a href={maker.url} target="_blank" rel="noopener noreferrer" className={`mt-5 self-start ${textLink}`}>
+        Message on Instagram ↗
+      </a>
     </article>
   );
 }
@@ -455,7 +477,7 @@ function ExternalView({ product }: { product: ExternalCard }) {
   return (
     <article className="flex h-full flex-col">
       <a href={product.url} target="_blank" rel="noopener noreferrer" className="group block">
-        <div className="relative aspect-square overflow-hidden rounded-md bg-white">
+        <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-linen bg-white">
           <GiftImage
             src={product.image.src}
             alt={product.image.alt}
@@ -466,25 +488,25 @@ function ExternalView({ product }: { product: ExternalCard }) {
       </a>
       <div className="flex flex-1 flex-col pt-4">
         <p className="text-xs text-muted">
-          <span className="font-medium text-charcoal">Online shop</span> · {product.shop.name}
+          Online shop · {product.shop.name}
           {product.adultsOnly && (
-            <span className="ml-1.5 rounded bg-linen px-1.5 py-0.5 text-[0.7rem] font-medium text-charcoal">18+ barware</span>
+            <span className="ml-1.5 rounded-full border border-charcoal/20 px-2 py-0.5 text-[0.7rem] text-charcoal">
+              18+ barware
+            </span>
           )}
         </p>
-        <h3 className="mt-1.5 text-[0.95rem] leading-snug font-medium">{product.name}</h3>
+        <h3 className="mt-2 font-serif text-xl leading-snug">{product.name}</h3>
         <p className="mt-2 text-sm text-muted">{product.reason}</p>
-        <p className="mt-3 text-sm">
-          <span className="font-semibold">{formatPrice(product.price)}</span>
+        <p className="mt-3 text-[0.95rem]">
+          <span className="font-medium">{formatPrice(product.price)}</span>
           {product.compareAt && product.compareAt > product.price && (
             <span className="ml-2 text-xs text-muted line-through">{formatPrice(product.compareAt)}</span>
           )}
         </p>
         <p className="mt-0.5 text-xs text-muted">Price checked {formatShortDate(product.priceCheckedOn)} · may have changed</p>
-        <div className="mt-auto pt-4">
-          <ButtonLink href={product.url} target="_blank" rel="noopener noreferrer" variant="secondary" className="w-full">
-            View on {product.shop.name} ↗
-          </ButtonLink>
-        </div>
+        <a href={product.url} target="_blank" rel="noopener noreferrer" className={`mt-auto self-start pt-4 ${textLink}`}>
+          View on {product.shop.name} ↗
+        </a>
       </div>
     </article>
   );
@@ -503,24 +525,29 @@ function FollowUp({ data, brief, view }: { data: FinderResponse; brief: string; 
   return (
     <Notice title={data.followUp?.question ?? "Tell us a bit more"}>
       <p>{data.message}</p>
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <form
+        onSubmit={onSubmit}
+        className="mt-6 flex items-center gap-2 rounded-full border border-charcoal/15 bg-white p-1.5 pl-5 shadow-soft focus-within:border-burgundy"
+      >
         <label htmlFor="follow-up" className="sr-only">Your answer</label>
         <input
           id="follow-up"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="e.g. Plays badminton and loves cars"
-          className="h-11 min-w-0 flex-1 rounded-md border border-linen bg-white px-3 text-sm text-charcoal focus:border-burgundy"
+          className="h-11 min-w-0 flex-1 bg-transparent text-[0.95rem] text-charcoal placeholder:text-muted/80 focus:outline-none"
         />
-        <Button type="submit">Add this</Button>
+        <button type="submit" className={`${primaryPill} shrink-0`}>
+          Add this
+        </button>
       </form>
-      <div className="mt-4 flex flex-wrap gap-2" aria-label="Suggestions">
+      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2" aria-label="Suggestions">
         {data.followUp?.suggestions.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => extend(s)}
-            className="rounded-full border border-linen bg-white px-3 py-1.5 text-sm text-muted hover:border-burgundy hover:text-burgundy"
+            className="text-sm text-muted underline decoration-linen underline-offset-4 hover:text-burgundy hover:decoration-burgundy"
           >
             {s}
           </button>
@@ -530,14 +557,14 @@ function FollowUp({ data, brief, view }: { data: FinderResponse; brief: string; 
   );
 }
 
+/** State messages: calm text, no box. */
 function Notice({ title, tone = "info", children }: { title: string; tone?: "info" | "error"; children: React.ReactNode }) {
   return (
-    <div
-      role={tone === "error" ? "alert" : undefined}
-      className={`max-w-2xl rounded-lg border bg-white p-6 ${tone === "error" ? "border-berry/40" : "border-linen"}`}
-    >
-      <h2 className={`font-serif text-2xl ${tone === "error" ? "text-berry" : ""}`}>{title}</h2>
-      <div className="mt-2 text-sm text-muted">{children}</div>
+    <div role={tone === "error" ? "alert" : undefined} className="max-w-2xl">
+      <h2 className={`font-serif text-3xl leading-tight tracking-tight sm:text-4xl ${tone === "error" ? "text-berry" : ""}`}>
+        {title}
+      </h2>
+      <div className="mt-3 text-muted">{children}</div>
     </div>
   );
 }
@@ -555,12 +582,12 @@ function Understood({ data }: { data: FinderResponse }) {
   const missing = [!u.destination && "a Mumbai area or PIN", !u.date && "a date"].filter(Boolean) as string[];
 
   return (
-    <div className="mt-4 border-t border-linen pt-4">
-      {u.summary && <p className="mb-3 text-sm">{u.summary}</p>}
+    <div className="mt-6">
+      {u.summary && <p className="text-sm">{u.summary}</p>}
       {chips.length > 0 && (
-        <ul className="flex flex-wrap gap-2" aria-label="What we understood">
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label="What we understood">
           {chips.map((chip) => (
-            <li key={chip} className="rounded-full bg-blush px-3 py-1 text-xs font-medium text-burgundy">
+            <li key={chip} className="rounded-full border border-linen bg-white/60 px-3 py-1 text-xs text-charcoal">
               {chip}
             </li>
           ))}
@@ -597,11 +624,11 @@ function ListingView({
   return (
     <article className="flex h-full flex-col">
       <Link href={routes.product(listing.slug)} className="group block">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-linen md:aspect-[4/5]">
+        <div className={`relative overflow-hidden rounded-[1rem] bg-linen ${compact ? "aspect-[4/5]" : "aspect-[4/3] md:aspect-[4/5]"}`}>
           <GiftImage
             src={listing.image.src}
             alt={listing.image.alt}
-            sizes="(min-width: 768px) 33vw, 100vw"
+            sizes={compact ? "(min-width: 1024px) 25vw, 50vw" : "(min-width: 768px) 33vw, 100vw"}
             preload={rank === 1}
             className="transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
@@ -609,18 +636,18 @@ function ListingView({
       </Link>
       <div className="flex flex-1 flex-col pt-4">
         <p className="text-xs text-muted">
-          <span className="font-medium text-charcoal">GIFTWALA listing</span> · sample maker{" "}
-          <Link href={routes.maker(listing.maker.slug)} className="hover:text-burgundy">
+          GIFTWALA listing · sample maker{" "}
+          <Link href={routes.maker(listing.maker.slug)} className="underline-offset-4 hover:text-burgundy hover:underline">
             {listing.maker.name}
           </Link>
         </p>
-        <h3 className="mt-1.5 font-serif text-xl leading-snug">
+        <h3 className={`mt-2 font-serif leading-snug ${compact ? "text-lg" : "text-2xl"}`}>
           <Link href={routes.product(listing.slug)} className="hover:text-burgundy">
             {listing.name}
           </Link>
         </h3>
-        {!compact && <p className="mt-2 text-sm">{listing.reason}</p>}
-        <p className="mt-3 text-sm font-semibold">{formatPrice(listing.price)}</p>
+        {!compact && <p className="mt-2 text-sm text-muted">{listing.reason}</p>}
+        <p className="mt-3 text-[0.95rem] font-medium">{formatPrice(listing.price)}</p>
         <p className={`mt-1 text-xs ${estimated ? "text-sage" : "text-muted"}`}>
           <span aria-hidden="true">{estimated ? "✓ " : "ⓘ "}</span>
           {listing.delivery.label}
@@ -631,29 +658,43 @@ function ListingView({
           </p>
         )}
         <div className="mt-auto pt-5">
-          <ButtonLink href={requestHref} className="w-full">
-            Request this gift
-          </ButtonLink>
+          {compact ? (
+            <Link href={requestHref} className={textLink}>
+              Request this gift <ArrowRightIcon width={15} height={15} />
+            </Link>
+          ) : (
+            <Link href={requestHref} className={`${primaryPill} h-10`}>
+              Request this gift <ArrowRightIcon width={15} height={15} />
+            </Link>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
-function IdeaView({ idea }: { idea: IdeaCard }) {
+function IdeaView({ idea, number }: { idea: IdeaCard; number: number }) {
   return (
-    <article className="h-full rounded-lg border border-dashed border-terracotta bg-white p-5">
-      <p className="text-xs font-semibold tracking-[0.12em] text-muted uppercase">Gift idea · {idea.category}</p>
-      <h3 className="mt-2 font-serif text-xl leading-snug">{idea.title}</h3>
+    <article className="h-full p-6 sm:p-7">
+      <div className="flex items-baseline gap-3">
+        <span aria-hidden="true" className="font-serif text-2xl text-terracotta">
+          {String(number).padStart(2, "0")}
+        </span>
+        <p className="text-xs text-muted">Gift idea · {idea.category}</p>
+      </div>
+      <h3 className="mt-3 font-serif text-2xl leading-snug">{idea.title}</h3>
       <p className="mt-2 text-sm">{idea.summary}</p>
-      <p className="mt-2 text-xs text-muted">{idea.reason}</p>
-      <h4 className="mt-4 text-xs font-semibold">Before you buy, check</h4>
-      <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-muted">
+      <p className="mt-2 text-sm text-muted">{idea.reason}</p>
+      <h4 className="mt-5 text-xs font-medium text-charcoal">Before you buy, check</h4>
+      <ul className="mt-2 space-y-1 text-sm text-muted">
         {idea.lookFor.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="flex gap-2">
+            <span aria-hidden="true" className="text-terracotta">—</span>
+            {item}
+          </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-muted">Usually found at: {idea.whereToFind}</p>
+      <p className="mt-4 text-xs text-muted">Usually found at: {idea.whereToFind}</p>
     </article>
   );
 }
@@ -661,13 +702,13 @@ function IdeaView({ idea }: { idea: IdeaCard }) {
 function LoadingCards() {
   return (
     <div>
-      <p className="mb-6 text-sm text-muted">Reading your description and checking the catalogue…</p>
-      <ul className="grid gap-8 md:grid-cols-3" aria-hidden="true">
+      <p className="mb-8 text-sm text-muted">Reading your description and checking the catalogue…</p>
+      <ul className="grid gap-x-8 gap-y-12 md:grid-cols-3" aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <li key={i} className="animate-pulse">
-            <div className="aspect-[4/5] rounded-md bg-linen" />
-            <div className="mt-4 h-3 w-1/3 rounded bg-linen" />
-            <div className="mt-3 h-5 w-2/3 rounded bg-linen" />
+            <div className="aspect-[4/3] rounded-[1rem] bg-linen md:aspect-[4/5]" />
+            <div className="mt-4 h-3 w-1/3 rounded-full bg-linen" />
+            <div className="mt-3 h-5 w-2/3 rounded-full bg-linen" />
           </li>
         ))}
       </ul>
