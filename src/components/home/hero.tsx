@@ -2,14 +2,14 @@ import { unsplash } from "@/lib/images";
 import { routes } from "@/lib/routes";
 import { ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
-import { GiftFinderEntry } from "./gift-finder-entry";
+import { DescribeBox } from "@/components/finder/describe-box";
 
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="page-container pt-10 pb-4 sm:pt-14 sm:pb-12 lg:pt-16 lg:pb-20">
       <div className="grid gap-10 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-10">
-        <div className="lg:self-end">
-          <p className="eyebrow mb-5">Gifts from independent makers</p>
+        <div className="order-1 lg:order-none lg:self-end">
+          <p className="eyebrow mb-5">Handmade gifts from Mumbai makers</p>
           <h1
             id="hero-title"
             className="font-serif text-[2.6rem] leading-[1.05] font-normal tracking-tight sm:text-6xl lg:text-[4.25rem]"
@@ -23,17 +23,9 @@ export function Hero() {
             Thoughtful finds from independent makers, chosen with care and made
             personal.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href={routes.giftFinder} size="lg">
-              Find their perfect gift
-            </ButtonLink>
-            <ButtonLink href={routes.gifts} size="lg" variant="secondary">
-              Explore all gifts
-            </ButtonLink>
-          </div>
         </div>
 
-        <div className="relative lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <div className="relative order-3 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <div
             aria-hidden="true"
             className="absolute -right-3 -bottom-3 hidden h-full w-full rounded-lg border border-terracotta/70 sm:block lg:-right-5 lg:-bottom-5"
@@ -48,9 +40,15 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Below the image on small screens; under the headline on desktop */}
-        <div className="lg:col-start-1 lg:row-start-2">
-          <GiftFinderEntry />
+        {/* Under the headline: above the image on phones, beside it on desktop */}
+        <div className="order-2 lg:order-none lg:col-start-1 lg:row-start-2">
+          <DescribeBox size="lg" />
+          <p className="mt-4 text-sm">
+            Rather browse?{" "}
+            <ButtonLink href={routes.gifts} variant="ghost" className="align-baseline">
+              Explore all gifts
+            </ButtonLink>
+          </p>
         </div>
       </div>
     </section>

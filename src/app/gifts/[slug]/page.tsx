@@ -10,11 +10,13 @@ import {
   getProductsByMaker,
   isPersonalisable,
 } from "@/lib/catalogue";
+import { zoneLabels } from "@/lib/finder/areas";
 import { formatPrice, formatProcessing } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { giftsHref } from "@/lib/search";
 import type { PersonalisationOption, Product, StockStatus } from "@/lib/types";
 import { ProductCard } from "@/components/product/product-card";
+import { ButtonLink } from "@/components/ui/button";
 import { GiftImage } from "@/components/ui/gift-image";
 import { ClockIcon, PenIcon, ReceiptIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -142,6 +144,15 @@ async function ProductDetails({ params }: Pick<PageProps<"/gifts/[slug]">, "para
               <span className="text-sm text-muted">{stock.detail}</span>
             </div>
 
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <ButtonLink href={routes.requestGift(product.slug)} size="lg">
+                Request this gift
+              </ButtonLink>
+              <p className="text-sm text-muted">
+                Delivers to {maker.deliveryZones.map((z) => zoneLabels[z]).join(", ")}.
+              </p>
+            </div>
+
             <dl className="mt-8 space-y-4 border-y border-linen py-6 text-sm">
               <div className="flex gap-3">
                 <ClockIcon className="mt-0.5 shrink-0 text-burgundy" />
@@ -212,8 +223,7 @@ async function ProductDetails({ params }: Pick<PageProps<"/gifts/[slug]">, "para
                     ))}
                   </ul>
                   <p className="mt-4 text-sm text-muted">
-                    You&apos;ll be able to choose these options and add this gift to
-                    your bag soon.
+                    You&apos;ll choose these when you request the gift.
                   </p>
                 </>
               ) : (

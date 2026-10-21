@@ -7,10 +7,10 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Shop",
     links: [
-      { href: routes.gifts, label: "All gifts" },
       { href: routes.giftFinder, label: "Gift Finder" },
+      { href: routes.gifts, label: "All gifts" },
       { href: routes.personalisedGifts, label: "Personalised gifts" },
-      { href: routes.favourites, label: "Favourites" },
+      { href: routes.requests, label: "Your order requests" },
     ],
   },
   {
@@ -22,20 +22,7 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
   },
   {
     title: "Makers",
-    links: [
-      { href: routes.makers, label: "Meet the Makers" },
-      { href: routes.sell, label: "Sell on GIFTWALA" },
-    ],
-  },
-  {
-    title: "Help",
-    links: [
-      { href: routes.help, label: "Customer support" },
-      { href: routes.shipping, label: "Shipping" },
-      { href: routes.returns, label: "Returns" },
-      { href: routes.privacy, label: "Privacy" },
-      { href: routes.terms, label: "Terms" },
-    ],
+    links: [{ href: routes.makers, label: "Meet the Makers" }],
   },
 ];
 
@@ -43,7 +30,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-linen bg-linen/50">
       <div className="page-container py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="max-w-xs">
             <Wordmark />
             <p className="mt-4 text-sm text-muted">

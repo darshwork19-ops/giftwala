@@ -1,15 +1,14 @@
 import { ClockIcon, HandIcon, PenIcon, ReceiptIcon } from "@/components/ui/icons";
 
 /**
- * Reassurance limited to what the product data actually supports: we show
- * maker details, dispatch times and return rules per product, and never
- * promise delivery dates.
+ * Reassurance limited to what the site actually does: arrival checks from
+ * maker lead times, maker details and structured order requests.
  */
 const points = [
   {
     icon: PenIcon,
     title: "Personalisation you can check",
-    body: "Only the options a product supports are shown, with any extra cost and added time listed before you add it to your cart.",
+    body: "Only the options a product supports are shown, with any extra cost and added time listed before you send a request.",
   },
   {
     icon: HandIcon,
@@ -18,13 +17,13 @@ const points = [
   },
   {
     icon: ClockIcon,
-    title: "Honest dispatch times",
-    body: "Each product lists how long its maker needs to prepare it. Personalised items can take a little longer, and we say so.",
+    title: "Only gifts that arrive in time",
+    body: "The Gift Finder checks each maker's lead time and delivery area against your date, and leaves out anything that can't make it.",
   },
   {
     icon: ReceiptIcon,
-    title: "Clear return rules",
-    body: "Return eligibility is shown on each product. Fresh flowers, food and personalised items usually can't be returned.",
+    title: "A clear order, not a DM thread",
+    body: "Your request goes to the maker as one structured message: gift, personalisation, date and address. You track it on a status page.",
   },
 ];
 

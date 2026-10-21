@@ -107,11 +107,23 @@ export interface Product {
   featured?: boolean;
 }
 
+export type DeliveryZone =
+  | "south-mumbai"
+  | "central"
+  | "western-suburbs"
+  | "thane"
+  | "navi-mumbai";
+
 export interface Maker {
   id: string;
   slug: string;
   name: string;
+  /** Neighbourhood and city, e.g. "Bandra West, Mumbai". */
   location: string;
+  /** Mumbai zones this maker delivers to. */
+  deliveryZones: DeliveryZone[];
+  /** Days in transit within Mumbai after dispatch (0 = same day). */
+  deliveryDays: number;
   craft: string;
   /** Short line for cards. */
   tagline: string;

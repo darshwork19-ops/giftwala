@@ -7,11 +7,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { occasions } from "@/data/taxonomy";
 import { routes } from "@/lib/routes";
 import {
-  BagIcon,
   ChevronDownIcon,
   CloseIcon,
-  HeartIcon,
   MenuIcon,
+  ReceiptIcon,
   SearchIcon,
 } from "@/components/ui/icons";
 import { Wordmark } from "./wordmark";
@@ -20,10 +19,8 @@ type Panel = "none" | "occasions" | "search" | "mobile";
 
 const navLink =
   "text-sm font-medium text-charcoal transition-colors hover:text-burgundy aria-[current=page]:text-burgundy";
-// Display is set separately so `hidden sm:inline-flex` can't be overridden.
-const iconButtonBase =
-  "h-10 w-10 items-center justify-center rounded-md text-charcoal transition-colors hover:bg-linen/70 hover:text-burgundy";
-const iconButton = `inline-flex ${iconButtonBase}`;
+const iconButton =
+  "inline-flex h-10 w-10 items-center justify-center rounded-md text-charcoal transition-colors hover:bg-linen/70 hover:text-burgundy";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -86,6 +83,11 @@ export function SiteHeader() {
         <nav aria-label="Main" className="hidden lg:block">
           <ul className="flex items-center gap-8">
             <li>
+              <Link href={routes.giftFinder} className={navLink} aria-current={current(routes.giftFinder)}>
+                Gift Finder
+              </Link>
+            </li>
+            <li>
               <Link href={routes.gifts} className={navLink} aria-current={current(routes.gifts)}>
                 Discover
               </Link>
@@ -147,20 +149,12 @@ export function SiteHeader() {
             <span className="sr-only">Search gifts</span>
           </button>
           <Link
-            href={routes.favourites}
-            className={`${iconButtonBase} hidden sm:inline-flex`}
-            aria-current={current(routes.favourites)}
-          >
-            <HeartIcon />
-            <span className="sr-only">Favourites</span>
-          </Link>
-          <Link
-            href={routes.cart}
+            href={routes.requests}
             className={iconButton}
-            aria-current={current(routes.cart)}
+            aria-current={current(routes.requests)}
           >
-            <BagIcon />
-            <span className="sr-only">Cart</span>
+            <ReceiptIcon />
+            <span className="sr-only">Your order requests</span>
           </Link>
         </div>
       </div>
@@ -204,10 +198,10 @@ export function SiteHeader() {
         <nav aria-label="Mobile" className="page-container py-6">
           <ul className="space-y-1">
             {[
-              { href: routes.gifts, label: "Discover all gifts" },
               { href: routes.giftFinder, label: "Gift Finder" },
+              { href: routes.gifts, label: "Discover all gifts" },
               { href: routes.makers, label: "Meet the Makers" },
-              { href: routes.favourites, label: "Favourites" },
+              { href: routes.requests, label: "Your order requests" },
             ].map((item) => (
               <li key={item.href}>
                 <Link

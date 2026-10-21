@@ -5,12 +5,12 @@ export function AnnouncementBar() {
   return (
     <div className="bg-burgundy text-white">
       <p className="page-container py-2 text-center text-xs tracking-wide sm:text-[0.8rem]">
-        Add a name, a note or an engraving on selected gifts.{" "}
+        Describe who it&apos;s for and see three handmade gifts that can arrive in time.{" "}
         <Link
-          href={routes.personalisedGifts}
+          href={routes.giftFinder}
           className="font-medium underline underline-offset-4 hover:no-underline"
         >
-          See what can be personalised
+          Try the Gift Finder
         </Link>
       </p>
     </div>
