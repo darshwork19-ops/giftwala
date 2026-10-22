@@ -7,7 +7,8 @@ import { clearCart } from "@/lib/cart";
 import { billingAddressLines, deliveryAddressLines } from "@/lib/checkout";
 import { formatShortDate } from "@/lib/finder/dates";
 import { formatPrice } from "@/lib/format";
-import { paymentMethodLabels, useOrders, type Order } from "@/lib/orders";
+import { paymentMethodLabels, syncOrdersFromAccount, useOrders, type Order } from "@/lib/orders";
+import { useProfile } from "@/lib/profile";
 import { useOrderRequests } from "@/lib/order-requests";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
@@ -21,6 +22,11 @@ export function OrdersView() {
   useEffect(() => {
     if (placed) clearCart();
   }, [placed]);
+  // Signed in to an account: bring in orders placed on other devices
+  const signedIn = Boolean(useProfile());
+  useEffect(() => {
+    if (signedIn) void syncOrdersFromAccount();
+  }, [signedIn]);
   const orders = useOrders();
   const requests = useOrderRequests();
   if (orders === undefined) return <Skeleton />;

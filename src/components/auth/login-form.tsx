@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { todayInIndia } from "@/lib/finder/dates";
-import { safeNext, saveProfile, signOut, useProfile } from "@/lib/profile";
+import {
+  authMode,
+  safeNext,
+  saveProfile,
+  sendMagicLink,
+  signInWithGoogle,
+  signOut,
+  useAuthState,
+  type Profile,
+} from "@/lib/profile";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 const PHONE = /^(\+?91)?[6-9]\d{9}$/;
@@ -12,24 +21,27 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_AGE = 13;
 
 const fieldClass =
-  "h-12 w-full rounded-full border border-charcoal/15 bg-white px-5 text-[0.95rem] placeholder:text-muted/70 focus:border-burgundy focus:outline-none aria-[invalid=true]:border-berry";
-
-type Fields = { name: string; email: string; phone: string; dob: string; anniversary: string };
+  "h-12 w-full rounded-full border border-charcoal/15 bg-white px-5 text-[0.95rem] placeholder:text-muted/70 focus:border-burgundy focus:outline-none aria-[invalid=true]:border-berry read-only:bg-linen/40 read-only:text-muted";
+const primary =
+  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-burgundy text-sm font-medium text-white transition-colors hover:bg-burgundy-hover disabled:opacity-60";
 
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = safeNext(params.get("next"));
-  const profile = useProfile();
-  const [fields, setFields] = useState<Fields>({ name: "", email: "", phone: "", dob: "", anniversary: "" });
-  const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
-  const set = (key: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFields((f) => ({ ...f, [key]: e.target.value }));
+  const nextParam = params.get("next");
+  const next = safeNext(nextParam);
+  const auth = useAuthState();
 
-  // Waiting for the browser to say whether someone is signed in
-  if (profile === undefined) return <div className="h-96 animate-pulse rounded-[1.25rem] bg-linen/60" />;
+  // Back from Google or the email link with a page to return to: go straight there
+  const autoContinue = auth.status === "signed-in" && nextParam !== null;
+  useEffect(() => {
+    if (autoContinue) router.replace(next);
+  }, [autoContinue, next, router]);
 
-  if (profile) {
+  if (auth.status === "loading" || autoContinue) return <div className="h-96 animate-pulse rounded-[1.25rem] bg-linen/60" />;
+
+  if (auth.status === "signed-in") {
+    const { profile } = auth;
     return (
       <div>
         <h1 className="font-serif text-4xl leading-tight tracking-tight sm:text-5xl">
@@ -47,7 +59,7 @@ export function LoginForm() {
           </Link>
           <button
             type="button"
-            onClick={signOut}
+            onClick={() => void signOut()}
             className="inline-flex h-12 items-center justify-center rounded-full border border-charcoal/20 px-6 text-sm font-medium transition-colors hover:border-burgundy hover:text-burgundy"
           >
             Sign out
@@ -57,9 +69,159 @@ export function LoginForm() {
     );
   }
 
-  function onSubmit(event: FormEvent) {
+  if (auth.status === "needs-details") {
+    return (
+      <div>
+        <p className="mb-4 text-sm tracking-wide text-muted">One last step</p>
+        <h1 className="font-serif text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+          Tell us a little <span className="text-burgundy italic">about you.</span>
+        </h1>
+        <p className="mt-4 max-w-md text-muted">You&apos;re signed in as {auth.email}. We only ask for these once.</p>
+        <DetailsForm
+          email={auth.email}
+          defaultName={auth.suggestedName}
+          submitLabel="Save and continue"
+          onSaved={() => router.replace(next)}
+        />
+        <button type="button" onClick={() => void signOut()} className="mt-6 text-sm text-muted underline underline-offset-4 hover:text-burgundy">
+          Use a different account
+        </button>
+      </div>
+    );
+  }
+
+  // Signed out
+  return (
+    <div>
+      <p className="mb-4 text-sm tracking-wide text-muted">Sign in to GIFTWALA</p>
+      <h1 className="font-serif text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+        A few details, <span className="text-burgundy italic">then the good part.</span>
+      </h1>
+      <p className="mt-4 max-w-md text-muted">Sign in to add gifts, build a box and keep track of your orders.</p>
+      {authMode === "supabase" ? (
+        <RealSignIn next={next} />
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled
+            aria-describedby="google-soon"
+            className="mt-8 inline-flex h-12 w-full cursor-not-allowed items-center justify-center gap-3 rounded-full border border-charcoal/15 bg-white text-sm font-medium text-charcoal/60"
+          >
+            <span aria-hidden="true" className="font-serif text-lg">G</span>
+            Continue with Google
+            <span id="google-soon" className="rounded-full bg-linen px-2 py-0.5 text-[0.7rem] text-muted">Coming soon</span>
+          </button>
+          <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
+            <span className="h-px flex-1 bg-linen" />
+            or sign in with your details
+            <span className="h-px flex-1 bg-linen" />
+          </div>
+          <DetailsForm submitLabel="Sign in" onSaved={() => router.replace(next)} />
+          <p className="mt-4 text-xs text-muted">
+            Demo sign-in: your details are saved only in this browser and aren&apos;t verified or sent anywhere.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Google, or a sign-in link by email (Supabase Auth). */
+function RealSignIn({ next }: { next: string }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<{ kind: "idle" | "sending" | "sent" } | { kind: "error"; message: string }>({ kind: "idle" });
+
+  async function google() {
+    setState({ kind: "sending" });
+    const error = await signInWithGoogle(next);
+    if (error) setState({ kind: "error", message: error });
+  }
+
+  async function onEmail(e: FormEvent) {
+    e.preventDefault();
+    if (!EMAIL.test(email.trim())) {
+      setState({ kind: "error", message: "Add a valid email address." });
+      return;
+    }
+    setState({ kind: "sending" });
+    const error = await sendMagicLink(email.trim().toLowerCase(), next);
+    setState(error ? { kind: "error", message: error } : { kind: "sent" });
+  }
+
+  if (state.kind === "sent") {
+    return (
+      <div className="mt-8 rounded-[1.25rem] border border-linen bg-white/70 p-6">
+        <p className="font-serif text-2xl">Check your inbox</p>
+        <p className="mt-2 text-sm text-muted">
+          We sent a sign-in link to <span className="text-charcoal">{email}</span>. Open it on this device to continue. It can
+          take a minute; check spam too.
+        </p>
+        <button type="button" onClick={() => setState({ kind: "idle" })} className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-burgundy">
+          Use a different email
+        </button>
+      </div>
+    );
+  }
+
+  const busy = state.kind === "sending";
+  return (
+    <>
+      <button
+        type="button"
+        onClick={google}
+        disabled={busy}
+        className="mt-8 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-charcoal/15 bg-white text-sm font-medium transition-colors hover:border-burgundy disabled:opacity-60"
+      >
+        <span aria-hidden="true" className="font-serif text-lg text-burgundy">G</span>
+        Continue with Google
+      </button>
+      <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
+        <span className="h-px flex-1 bg-linen" />
+        or get a sign-in link by email
+        <span className="h-px flex-1 bg-linen" />
+      </div>
+      <form onSubmit={onEmail} noValidate>
+        <label htmlFor="login-email-link" className="mb-1.5 block pl-1 text-sm font-medium">Email address</label>
+        <input
+          id="login-email-link"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className={fieldClass}
+          aria-invalid={state.kind === "error"}
+        />
+        {state.kind === "error" && <p role="alert" className="mt-1.5 pl-1 text-xs font-medium text-berry">{state.message}</p>}
+        <button type="submit" disabled={busy} className={`${primary} mt-4`}>
+          {busy ? "Sending…" : "Email me a sign-in link"} <ArrowRightIcon width={16} height={16} />
+        </button>
+      </form>
+      <p className="mt-4 text-xs text-muted">New here? You&apos;ll add your name, mobile and birthday after signing in.</p>
+    </>
+  );
+}
+
+type Fields = { name: string; email: string; phone: string; dob: string; anniversary: string };
+
+/** Name, email, mobile, birthday and (optional) anniversary. */
+function DetailsForm({ email, defaultName = "", submitLabel, onSaved }: {
+  /** Fixed email from the signed-in account; editable when absent (demo mode). */
+  email?: string;
+  defaultName?: string;
+  submitLabel: string;
+  onSaved: () => void;
+}) {
+  const [fields, setFields] = useState<Fields>({ name: defaultName, email: email ?? "", phone: "", dob: "", anniversary: "" });
+  const [errors, setErrors] = useState<Partial<Record<keyof Fields | "save", string>>>({});
+  const [saving, setSaving] = useState(false);
+  const set = (key: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement>) => setFields((f) => ({ ...f, [key]: e.target.value }));
+  const today = todayInIndia();
+
+  async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const today = todayInIndia();
     const [y, m, d] = today.split("-");
     const latestDob = `${Number(y) - MIN_AGE}-${m}-${d}`;
     const e: typeof errors = {};
@@ -75,77 +237,46 @@ export function LoginForm() {
       document.getElementById(`login-${first}`)?.focus();
       return;
     }
-    saveProfile({
+    setSaving(true);
+    const profile: Profile = {
       name: fields.name.trim(),
       email: fields.email.trim().toLowerCase(),
       phone: fields.phone.replace(/[\s-]/g, ""),
       dob: fields.dob,
       anniversary: fields.anniversary || undefined,
       createdAt: new Date().toISOString(),
-    });
-    router.replace(next);
+    };
+    const error = await saveProfile(profile);
+    setSaving(false);
+    if (error) setErrors({ save: error });
+    else onSaved();
   }
 
-  const today = todayInIndia();
-
   return (
-    <div>
-      <p className="mb-4 text-sm tracking-wide text-muted">Sign in to GIFTWALA</p>
-      <h1 className="font-serif text-4xl leading-[1.05] tracking-tight sm:text-5xl">
-        A few details, <span className="text-burgundy italic">then the good part.</span>
-      </h1>
-      <p className="mt-4 max-w-md text-muted">
-        Sign in to add gifts, build a box and keep track of your requests.
-      </p>
-
-      <button
-        type="button"
-        disabled
-        aria-describedby="google-soon"
-        className="mt-8 inline-flex h-12 w-full cursor-not-allowed items-center justify-center gap-3 rounded-full border border-charcoal/15 bg-white text-sm font-medium text-charcoal/60"
-      >
-        <span aria-hidden="true" className="font-serif text-lg">G</span>
-        Continue with Google
-        <span id="google-soon" className="rounded-full bg-linen px-2 py-0.5 text-[0.7rem] text-muted">
-          Coming soon
-        </span>
-      </button>
-
-      <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
-        <span className="h-px flex-1 bg-linen" />
-        or sign in with your details
-        <span className="h-px flex-1 bg-linen" />
+    <form onSubmit={onSubmit} noValidate className="mt-8 grid gap-4 sm:grid-cols-2">
+      <Field id="name" label="Full name" error={errors.name} className="sm:col-span-2">
+        <input id="login-name" className={fieldClass} value={fields.name} onChange={set("name")} autoComplete="name" aria-invalid={Boolean(errors.name)} />
+      </Field>
+      <Field id="email" label="Email address" error={errors.email}>
+        <input id="login-email" type="email" inputMode="email" className={fieldClass} value={fields.email} onChange={set("email")}
+          readOnly={email !== undefined} autoComplete="email" placeholder="you@example.com" aria-invalid={Boolean(errors.email)} />
+      </Field>
+      <Field id="phone" label="Mobile number" error={errors.phone}>
+        <input id="login-phone" type="tel" inputMode="tel" className={fieldClass} value={fields.phone} onChange={set("phone")} autoComplete="tel" placeholder="98765 43210" aria-invalid={Boolean(errors.phone)} />
+      </Field>
+      <Field id="dob" label="Date of birth" error={errors.dob}>
+        <input id="login-dob" type="date" max={today} className={fieldClass} value={fields.dob} onChange={set("dob")} autoComplete="bday" aria-invalid={Boolean(errors.dob)} />
+      </Field>
+      <Field id="anniversary" label="Anniversary (optional)" error={errors.anniversary}>
+        <input id="login-anniversary" type="date" max={today} className={fieldClass} value={fields.anniversary} onChange={set("anniversary")} aria-invalid={Boolean(errors.anniversary)} />
+      </Field>
+      <div className="sm:col-span-2">
+        {errors.save && <p role="alert" className="mb-3 text-sm font-medium text-berry">{errors.save}</p>}
+        <button type="submit" disabled={saving} className={`${primary} mt-2`}>
+          {saving ? "Saving…" : submitLabel} <ArrowRightIcon width={16} height={16} />
+        </button>
       </div>
-
-      <form onSubmit={onSubmit} noValidate className="grid gap-4 sm:grid-cols-2">
-        <Field id="name" label="Full name" error={errors.name} className="sm:col-span-2">
-          <input id="login-name" className={fieldClass} value={fields.name} onChange={set("name")} autoComplete="name" aria-invalid={Boolean(errors.name)} />
-        </Field>
-        <Field id="email" label="Email address" error={errors.email}>
-          <input id="login-email" type="email" inputMode="email" className={fieldClass} value={fields.email} onChange={set("email")} autoComplete="email" placeholder="you@example.com" aria-invalid={Boolean(errors.email)} />
-        </Field>
-        <Field id="phone" label="Mobile number" error={errors.phone}>
-          <input id="login-phone" type="tel" inputMode="tel" className={fieldClass} value={fields.phone} onChange={set("phone")} autoComplete="tel" placeholder="98765 43210" aria-invalid={Boolean(errors.phone)} />
-        </Field>
-        <Field id="dob" label="Date of birth" error={errors.dob}>
-          <input id="login-dob" type="date" max={today} className={fieldClass} value={fields.dob} onChange={set("dob")} autoComplete="bday" aria-invalid={Boolean(errors.dob)} />
-        </Field>
-        <Field id="anniversary" label="Anniversary (optional)" error={errors.anniversary}>
-          <input id="login-anniversary" type="date" max={today} className={fieldClass} value={fields.anniversary} onChange={set("anniversary")} aria-invalid={Boolean(errors.anniversary)} />
-        </Field>
-        <div className="sm:col-span-2">
-          <button
-            type="submit"
-            className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-burgundy text-sm font-medium text-white transition-colors hover:bg-burgundy-hover"
-          >
-            Sign in <ArrowRightIcon width={16} height={16} />
-          </button>
-          <p className="mt-4 text-xs text-muted">
-            Demo sign-in: your details are saved only in this browser and aren&apos;t verified or sent anywhere.
-          </p>
-        </div>
-      </form>
-    </div>
+    </form>
   );
 }
 

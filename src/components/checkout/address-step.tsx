@@ -17,7 +17,7 @@ import {
 import { saveCheckoutDraft, useCart, useCheckoutDraft, type CheckoutDraft } from "@/lib/cart";
 import { allAreaNames, findArea, zoneLabels } from "@/lib/finder/areas";
 import { formatShortDate } from "@/lib/finder/dates";
-import type { Profile } from "@/lib/profile";
+import { saveCheckoutToAccount, useAuthState, type Profile } from "@/lib/profile";
 import { routes } from "@/lib/routes";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { CheckoutSteps, Field, Redirect, fieldClass, OrderSummary, PageTitle, primaryPill, Skeleton, useRequireProfile, useToday } from "./shared";
@@ -27,11 +27,15 @@ export function AddressStep() {
   const lines = useCart();
   const draft = useCheckoutDraft();
   const today = useToday();
+  const auth = useAuthState();
 
   if (!profile || lines === undefined || !draft || !today) return <Skeleton />;
   const cart = summariseCart(lines, today);
   if (cart.lines.length === 0 || cart.zones.length === 0) return <Redirect to={routes.cart} />;
-  return <AddressForm cart={cart} draft={draft} profile={profile} />;
+  // Nothing saved in this browser yet: use the details saved on the account, if any
+  const remote = auth.status === "signed-in" ? (auth.checkout as CheckoutDraft | undefined) : undefined;
+  const start = !draft.delivery.line1 && remote?.delivery ? remote : draft;
+  return <AddressForm cart={cart} draft={start} profile={profile} />;
 }
 
 function AddressForm({ cart, draft, profile }: { cart: CartSummary; draft: CheckoutDraft; profile: Profile }) {
@@ -71,6 +75,7 @@ function AddressForm({ cart, draft, profile }: { cart: CartSummary; draft: Check
       return;
     }
     saveCheckoutDraft({ contact, delivery, billing });
+    void saveCheckoutToAccount({ contact, delivery, billing });
     router.push(routes.checkoutReview);
   }
 
