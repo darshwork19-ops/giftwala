@@ -7,20 +7,25 @@ import { classifyIntent, followUpFor, type IntentKind } from "./intent";
 import { getShop } from "@/data/external-products";
 import { instagramUrl } from "@/data/instagram-makers";
 import { routes } from "@/lib/routes";
-import { getStudioProducts } from "@/lib/studios";
+import { instagramPostUrl } from "@/data/instagram-maker-products";
+import { getStudioById, getStudioProducts, photosVisible } from "@/lib/studios";
 import {
   describeExclusions,
   filterAndScore,
   matchExternal,
+  ideaForm,
   matchIdeas,
+  matchMakerProducts,
   matchInstagramMakers,
   popularGifts,
   ruleReason,
   type Candidate,
+  type ExclusionReason,
 } from "./match";
 import { parseBrief, type BriefFacts } from "./parse";
 import { INTENT_INSTRUCTIONS, IntentCheckSchema, RANKER_INSTRUCTIONS, RankingSchema, rankerPrompt } from "./ranker";
-import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard, MakerCard, MatchRequest } from "./types";
+import { buildShortlist, TARGET_RESULTS, type Pooled } from "./shortlist";
+import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard, MakerCard, MakerProductCard, MatchRequest } from "./types";
 
 /**
  * The Gift Finder pipeline, in order:
@@ -33,10 +38,13 @@ import type { DeliveryInfo, ExternalCard, FinderResponse, IdeaCard, ListingCard,
  *      items; any id it returns is re-validated. If the AI fails, we return
  *      an error state rather than unranked products.
  *   5. Delivery status per listing, never stronger than the data allows.
+ *   6. One ranked, de-duplicated shortlist across every source (up to 15,
+ *      see shortlist.ts). Fewer relevant items = a shorter list, never padding.
  */
 
-export const MAX_LISTINGS = 6;
-const SHORTLIST = 12;
+/** Catalogue listings the AI may pick from, and the most it may return. */
+export const MAX_LISTINGS = 10;
+const SHORTLIST = 20;
 
 export const MESSAGES = {
   nonsense:
@@ -86,16 +94,19 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
 
   // 3. Hard filters and relevance
   const { relevant, excluded } = filterAndScore(facts, deps.today, request.exclude);
-  const ideas = matchIdeas(facts).map(({ idea, matched }): IdeaCard => ({
+  const ideaMatches = matchIdeas(facts);
+  const ideas = ideaMatches.map(({ idea, matched }): IdeaCard => ({
     kind: "idea",
     id: idea.id,
     title: idea.title,
     summary: idea.summary,
     category: idea.category,
     // Short words like "ca" or "f1" are usually acronyms
-    reason: `Because you mentioned “${matched.slice(0, 2).map((w) => (w.length <= 3 ? w.toUpperCase() : w)).join("” and “")}”.`,
+    reason: `Could suit them because you mentioned “${matched.slice(0, 2).map((w) => (w.length <= 3 ? w.toUpperCase() : w)).join("” and “")}”.`,
     lookFor: idea.lookFor,
     whereToFind: idea.whereToFind,
+    form: ideaForm(idea),
+    check: idea.check,
   }));
   const external = matchExternal(facts, brief).map(({ product, matched }): ExternalCard => {
     const shop = getShop(product.shopId);
@@ -133,6 +144,22 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     checkedOn: maker.checkedOn,
     reason: `Matches “${matched.slice(0, 2).join("” and “")}” from your description.`,
   }));
+  const externalMatches = new Map(matchExternal(facts, brief).map((m) => [m.product.id, m]));
+  const makerProductMatches = matchMakerProducts(facts);
+  const makerProductCards = makerProductMatches.map(({ product, matched }): MakerProductCard => {
+    const maker = getStudioById(product.makerId);
+    return {
+      kind: "maker-product",
+      id: product.id,
+      name: product.name,
+      summary: product.summary,
+      category: product.category,
+      image: photosVisible(maker) ? product.image : null,
+      maker: { name: maker.name, handle: maker.handle, studioUrl: routes.studio(maker.handle) },
+      postUrl: instagramPostUrl(product.postCode),
+      reason: `Could suit them because you mentioned “${matched.slice(0, 2).join("” and “")}”.`,
+    };
+  });
   const excludedNote = describeExclusions(excluded, facts);
   const deliveryNote = deliveryNoteFor(facts);
 
@@ -180,6 +207,48 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
   }
 
   const listings = picked.map(({ candidate, reason }) => toListing(candidate, reason, facts));
+
+  // 6. One shortlist across every source
+  const pool: Pooled[] = [
+    ...picked.map(({ candidate }, i): Pooled => ({
+      kind: "listing",
+      id: candidate.product.id,
+      // The AI's order counts a little: its first pick gets the most
+      score: candidate.matched.length * 10 + (candidate.strong ? 0 : 4) + (mode === "ai" ? Math.max(0, 3 - i * 0.5) : 0),
+      matched: candidate.matched.length ? candidate.matched : facts.interests,
+      cluster: `listing:${candidate.product.category}`,
+      name: candidate.product.name,
+      form: "product",
+      deliverable: listings[i].delivery.status === "estimated",
+      handmade: candidate.product.tags.includes("handmade"),
+    })),
+    ...external.map((card): Pooled => {
+      const m = externalMatches.get(card.id)!;
+      return { kind: "external", id: card.id, score: m.score, matched: m.matched, cluster: `external:${m.product.shopId}:${card.category}`, name: card.name, form: "product" };
+    }),
+    ...makerProductMatches.map(({ product, matched, score }): Pooled => ({
+      kind: "maker-product",
+      id: product.id,
+      score,
+      matched,
+      cluster: `maker:${product.makerId}`,
+      name: product.name,
+      form: "product",
+      handmade: true,
+    })),
+    ...ideaMatches.map(({ idea, matched, score }): Pooled => ({
+      kind: "idea",
+      id: idea.id,
+      score,
+      matched,
+      // Same subject and same kind = near-substitutes (two cricket experiences)
+      cluster: `idea:${ideaForm(idea)}:${idea.triggers[0]}`,
+      name: idea.title,
+      form: ideaForm(idea),
+    })),
+  ];
+  const results = buildShortlist(pool, request.prefer);
+  const limited = results.length < TARGET_RESULTS ? limitedNote(results.length, excluded, facts) : undefined;
   const understood = {
     ...base.understood,
     summary,
@@ -187,7 +256,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
   };
 
   // 5. Outcome
-  if (listings.length === 0 && ideas.length === 0 && external.length === 0 && makers.length === 0) {
+  if (results.length === 0) {
     return {
       ...base,
       understood,
@@ -216,6 +285,9 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     listings,
     external,
     makers,
+    makerProducts: makerProductCards,
+    results,
+    limited,
     popular: popularGifts(facts, deps.today, listings.map((l) => l.id)).map((c) =>
       toListing(c, popularReason(facts), facts),
     ),
@@ -223,6 +295,27 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     excludedNote,
     deliveryNote,
     remaining: Math.max(0, relevant.length - listings.length),
+  };
+}
+
+/**
+ * When fewer than 10 relevant options exist, say so plainly and suggest the
+ * changes that would actually widen the search (based on what was filtered).
+ */
+function limitedNote(
+  count: number,
+  excluded: Record<ExclusionReason, number>,
+  facts: BriefFacts,
+): NonNullable<FinderResponse["limited"]> {
+  const broaden: NonNullable<FinderResponse["limited"]>["broaden"] = [];
+  if (excluded.budget > 0) broaden.push("budget");
+  if (excluded.date > 0) broaden.push("date");
+  if (excluded.destination > 0) broaden.push("area");
+  if (facts.keywords.length < 4) broaden.push("interests");
+  const what = count === 1 ? "1 option" : `${count} options`;
+  return {
+    note: `We found ${what} that genuinely fit. That's everything relevant we have right now; we don't pad the list with unrelated gifts.`,
+    broaden,
   };
 }
 
@@ -239,6 +332,8 @@ function baseResponse(facts: BriefFacts): FinderResponse {
       interests: facts.interests.map((id) => interestList.find((i) => i.id === id)?.label ?? id),
     },
     listings: [],
+    makerProducts: [],
+    results: [],
     external: [],
     makers: [],
     popular: [],

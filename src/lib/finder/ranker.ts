@@ -29,7 +29,8 @@ export const RANKER_INSTRUCTIONS = `You help shoppers on GIFTWALA choose a gift 
 You receive the shopper's description of the recipient and a short list of candidate gifts from the GIFTWALA catalogue. Every candidate already fits the budget, timing and destination and shares at least one keyword with the description. Your job is to judge which candidates genuinely suit this person.
 
 Rules:
-- Return only candidates that genuinely fit the person's stated interests. It is fine to return one, two or none. Never pad the list.
+- Return every candidate that genuinely fits the person's stated interests, best first. When several fit, return several: the shopper wants a range to choose from. Leave out weak or unrelated ones; if only a few fit, return only those, and return none if none fit. Never pad the list.
+- Prefer variety: when two candidates are near-identical, keep the better one first.
 - Choose only from the candidate ids provided. Never invent products, makers, prices, stock, options or delivery details.
 - Write each reason to the shopper about the recipient, in plain, warm English under 22 words, grounded in the shopper's words and the product's description.
 - Do not assume gender, age or taste. Use "they" unless the description makes the recipient's gender clear.
@@ -47,7 +48,7 @@ export function rankerPrompt(brief: string, candidates: Candidate[], max: number
     maker: getMaker(product.makerId).name,
     personalisation: product.personalisation.map((o) => o.label),
   }));
-  return `Shopper's description:\n${brief}\n\nReturn at most ${max} gifts that genuinely fit, chosen only from these candidates:\n${JSON.stringify(catalogue)}`;
+  return `Shopper's description:\n${brief}\n\nReturn every gift that genuinely fits (up to ${max}), best first, chosen only from these candidates:\n${JSON.stringify(catalogue)}`;
 }
 
 export const IntentCheckSchema = z.object({

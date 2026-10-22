@@ -207,7 +207,7 @@ export function GiftQuiz({ variant = "page", onTypeInstead }: GiftQuizProps) {
               <fieldset>
                 <legend className="mb-2 text-sm font-medium">Show me</legend>
                 <div className="flex flex-wrap gap-2">
-                  {([["buy", "Things I can buy"], ["ideas", "Gift ideas"]] as const).map(([id, label]) => (
+                  {([["all", "Everything"], ["buy", "Things I can buy"], ["ideas", "Gift ideas"]] as const).map(([id, label]) => (
                     <button key={id} type="button" aria-pressed={a.view === id} onClick={() => setA((v) => ({ ...v, view: id }))} className={chip}>
                       {label}
                     </button>

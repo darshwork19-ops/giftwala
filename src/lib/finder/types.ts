@@ -8,7 +8,11 @@ export interface MatchRequest {
   budgetMax?: number;
   /** "rules" skips AI ranking (used after an AI error, only when asked). */
   mode?: "auto" | "rules";
+  /** A refinement that re-ranks the same brief ("more practical", "more unusual"…). */
+  prefer?: Preference;
 }
+
+export type Preference = "practical" | "unusual" | "experiences" | "handmade";
 
 /**
  * - results:   at least one validated listing or labelled gift idea.
@@ -93,6 +97,44 @@ export interface IdeaCard {
   reason: string;
   lookFor: string[];
   whereToFind: string;
+  form: string;
+  /** The one question worth answering before buying, if any. */
+  check?: string;
+}
+
+/** A product a verified Mumbai maker shows on Instagram (price on request). */
+export interface MakerProductCard {
+  kind: "maker-product";
+  id: string;
+  name: string;
+  summary: string;
+  category: string;
+  /** Null when the maker's photos may not be shown. */
+  image: { src: string; alt: string } | null;
+  maker: { name: string; handle: string; studioUrl: string };
+  postUrl: string;
+  reason: string;
+}
+
+export type ResultKind = "listing" | "external" | "maker-product" | "idea";
+
+/**
+ * Display groups. Only groups with at least one result are shown.
+ * - best:        the strongest matches of any kind
+ * - experiences: things to do rather than things to own
+ * - hobby:       gear, upgrades and learning for a stated interest
+ * - makers:      independent Mumbai makers' products
+ * - more:        other relevant options
+ */
+export type ResultGroup = "best" | "experiences" | "hobby" | "makers" | "more";
+
+/** One entry in the ranked, de-duplicated shortlist; the card lives in its kind's array. */
+export interface ResultRef {
+  kind: ResultKind;
+  id: string;
+  group: ResultGroup;
+  /** Words from the brief this result matched, for "focus on one interest". */
+  matched: string[];
 }
 
 export interface FinderResponse {
@@ -120,6 +162,15 @@ export interface FinderResponse {
   /** Well-loved catalogue gifts within the same budget/date/destination, shown separately. */
   popular: ListingCard[];
   ideas: IdeaCard[];
+  /** Matching products from verified Mumbai makers. */
+  makerProducts: MakerProductCard[];
+  /**
+   * The ranked, de-duplicated shortlist across every source, up to 15. Every
+   * entry points at a card above; nothing appears here that isn't relevant.
+   */
+  results: ResultRef[];
+  /** Set when fewer than 10 relevant results exist, with ways to see more. */
+  limited?: { note: string; broaden: ("budget" | "date" | "area" | "interests")[] };
   /** Explains what delivery checks were (and weren't) possible. */
   deliveryNote?: string;
   excludedNote?: string;

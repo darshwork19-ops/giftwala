@@ -1,6 +1,6 @@
 import { externalProducts, type ExternalProduct } from "@/data/external-products";
-import { giftIdeas, type GiftIdea } from "@/data/gift-ideas";
-import { makerProducts } from "@/data/instagram-maker-products";
+import { giftIdeas, type GiftIdea, type IdeaForm } from "@/data/gift-ideas";
+import { makerProducts, type MakerProduct } from "@/data/instagram-maker-products";
 import { instagramMakers, type InstagramMaker } from "@/data/instagram-makers";
 import { interests as interestList, occasions } from "@/data/taxonomy";
 import { getAllProducts, getMaker, isPersonalisable } from "@/lib/catalogue";
@@ -123,35 +123,73 @@ function relevance(product: Product, facts: BriefFacts): Pick<Candidate, "score"
   return { score, matched, strong: matched.length > 0 };
 }
 
+/** An idea's kind, from its own `form` or, for older entries, its category. */
+export function ideaForm(idea: GiftIdea): IdeaForm {
+  if (idea.form) return idea.form;
+  const c = idea.category.toLowerCase();
+  if (c.includes("experience")) return "experience";
+  if (c.includes("collectible") || c.includes("merchandise")) return "collectible";
+  if (c.includes("book")) return "learning";
+  if (/coffee|tea|food|self-care|fragrance/.test(c)) return "consumable";
+  if (/keepsake|family|festive/.test(c)) return "keepsake";
+  if (/plants|wellness|jewellery|entertainment|baby/.test(c)) return "lifestyle";
+  return "equipment";
+}
+
+export interface IdeaMatch {
+  idea: GiftIdea;
+  matched: string[];
+  score: number;
+}
+
 /**
- * Gift ideas whose trigger words appear in the brief. Ideas whose main
- * subject matched rank first, and each interest in the brief gets covered
- * before a second idea for the same interest is added.
+ * Gift ideas whose trigger words appear in the brief, best first. The score
+ * counts the distinct brief words an idea matches, plus a bump when its main
+ * subject (first trigger) matched; `weight` lowers ideas that should trail
+ * (a study gift for someone who's studying but loves badminton).
  */
-export function matchIdeas(facts: BriefFacts, limit = 4): { idea: GiftIdea; matched: string[] }[] {
-  const words = new Set(facts.keywords.map(stem));
-  const hits = giftIdeas
+export function matchIdeas(facts: BriefFacts, limit = 30): IdeaMatch[] {
+  return giftIdeas
     .map((idea, order) => {
-      const matched = idea.triggers.filter((t) => words.has(stem(t)));
-      const primary = matched.includes(idea.triggers[0]) ? 1 : 0;
-      return { idea, matched, score: matched.length + primary, order };
+      const triggers = new Set(idea.triggers.map(stem));
+      // The giver's own words (not stems), so "focus on adventurous" reads right
+      const matched = [...new Set(facts.keywords.filter((w) => triggers.has(stem(w))))];
+      const primary = matched.some((w) => stem(w) === stem(idea.triggers[0])) ? 1 : 0;
+      return { idea, matched, score: (matched.length * 10 + primary * 3) * (idea.weight ?? 1), order };
     })
     .filter((m) => m.matched.length > 0)
-    .sort((a, b) => b.score - a.score || a.order - b.order);
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .slice(0, limit)
+    .map(({ idea, matched, score }) => ({ idea, matched, score }));
+}
 
-  const chosen: typeof hits = [];
-  const covered = new Set<string>();
-  for (const pass of [true, false]) {
-    for (const hit of hits) {
-      if (chosen.length >= limit) break;
-      if (chosen.includes(hit)) continue;
-      const addsNew = hit.matched.some((m) => !covered.has(m));
-      if (pass && !addsNew) continue;
-      chosen.push(hit);
-      hit.matched.forEach((m) => covered.add(m));
-    }
-  }
-  return chosen.map(({ idea, matched }) => ({ idea, matched }));
+// ── Products from verified Mumbai makers ──────────────────────────────────
+
+export interface MakerProductMatch {
+  product: MakerProduct;
+  matched: string[];
+  score: number;
+}
+
+/**
+ * Individual products that verified Mumbai makers show on Instagram. They
+ * have no listed price or lead time, so budget and date can't be checked;
+ * the UI says so. Mumbai-only, like the makers.
+ */
+export function matchMakerProducts(facts: BriefFacts, limit = 12): MakerProductMatch[] {
+  if (facts.destination?.kind === "outside") return [];
+  return makerProducts
+    .map((product) => {
+      const terms = tagTerms(product);
+      const hits = facts.keywords.filter((w) => terms.has(stem(w)));
+      const matched = hits.filter((w) => !hits.some((o) => o !== w && o.includes("-") && o.split("-").includes(w)));
+      let score = matched.length * 10;
+      if (facts.occasion && product.occasions.includes(facts.occasion)) score += 2;
+      return { product, matched, score };
+    })
+    .filter((m) => m.matched.length > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
 
 /** A short, factual "why it fits" line built from what actually matched. */

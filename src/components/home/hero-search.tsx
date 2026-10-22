@@ -46,6 +46,7 @@ export function HeroSearch() {
         <span className="mr-1 text-muted">Show me</span>
         {(
           [
+            { id: "all", label: "Everything" },
             { id: "buy", label: "Things I can buy" },
             { id: "ideas", label: "Gift ideas" },
           ] as const
@@ -54,7 +55,7 @@ export function HeroSearch() {
             key={option.id}
             className="cursor-pointer rounded-full border border-linen px-3 py-1 text-muted transition-colors has-[:checked]:border-charcoal has-[:checked]:text-charcoal has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-burgundy"
           >
-            <input type="radio" name="view" value={option.id} defaultChecked={option.id === "buy"} className="sr-only" />
+            <input type="radio" name="view" value={option.id} defaultChecked={option.id === "all"} className="sr-only" />
             {option.label}
           </label>
         ))}

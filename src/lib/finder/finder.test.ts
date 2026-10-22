@@ -111,7 +111,9 @@ describe("required Gift Finder cases", () => {
     it("ids the AI invents are dropped", async () => {
       const r = await run(brief, fakeAi(() => [{ productId: "p-999", reason: "Made up" }]));
       expect(r.listings).toHaveLength(0);
-      expect(r.status).toBe("no_match");
+      // Only relevant, labelled ideas may remain (here: K-drama merch); never a catalogue listing
+      expect(r.results.every((x) => x.kind !== "listing")).toBe(true);
+      expect(r.results.every((x) => x.matched.length > 0)).toBe(true);
     });
 
     it("the AI may return fewer picks than candidates; nothing is padded", async () => {

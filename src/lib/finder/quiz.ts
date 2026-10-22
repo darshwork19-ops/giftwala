@@ -129,10 +129,10 @@ export interface QuizAnswers {
   date?: string;
   /** A Mumbai area name, or "" when not given. */
   area: string;
-  view: "buy" | "ideas";
+  view: "all" | "buy" | "ideas";
 }
 
-export const emptyAnswers: QuizAnswers = { interests: [], styles: [], area: "", view: "buy" };
+export const emptyAnswers: QuizAnswers = { interests: [], styles: [], area: "", view: "all" };
 
 export const MAX_INTERESTS = 5;
 

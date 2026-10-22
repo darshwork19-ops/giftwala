@@ -208,3 +208,19 @@ Cart, saved addresses and orders live in this browser's localStorage (`giftwala.
 `giftwala.orders.v1`). Paid orders are also sent to `ORDER_WEBHOOK_URL` when it's set. Pricing and delivery rules are
 in `src/lib/checkout.ts` (tested in `checkout.test.ts`). Swapping in a real gateway (e.g. Razorpay) means creating
 the order on the server, opening the gateway's checkout and verifying its signature server-side before saving.
+
+## Gift Finder: 10–15 varied results
+
+The Gift Finder now builds one ranked shortlist of up to 15 results from every source
+(`src/lib/finder/shortlist.ts`):
+
+- **Sources:** GIFTWALA catalogue listings (AI-ranked when Gemini is set), The Drunken Mug products,
+  individual products from verified Mumbai makers, and labelled gift ideas (`src/data/gift-ideas.ts`, 87 ideas
+  tagged by kind: equipment, experience, learning, collectible, consumable, keepsake, lifestyle).
+- **Diversity:** every brief word gets its best item first; then a light MMR penalty; at most 2 items per
+  cluster (same subject and kind, or same shop category, or same maker); per-source caps; near-duplicate names
+  skipped. Nothing is added to reach a count.
+- **Fewer than 10?** The page says so and suggests what would widen the search (based on what was filtered).
+- **Refinements** re-rank the same brief without dropping its constraints: More practical / unusual / experiences
+  / handmade, Lower budget, Show other catalogue gifts. Filters (everything / things to buy / ideas) and
+  "focus on one interest" are instant.

@@ -13,8 +13,8 @@ export const routes = {
   drunkenMug: "/shops/the-drunken-mug",
   studio: (handle: string) => `/studios/${encodeURIComponent(handle)}`,
   giftFinder: "/gift-finder",
-  giftFinderFor: (brief: string, view?: "buy" | "ideas") =>
-    `/gift-finder?brief=${encodeURIComponent(brief)}${view ? `&view=${view}` : ""}`,
+  giftFinderFor: (brief: string, view?: "all" | "buy" | "ideas") =>
+    `/gift-finder?brief=${encodeURIComponent(brief)}${view && view !== "all" ? `&view=${view}` : ""}`,
   giftBox: "/gift-box",
   requestGift: (slug: string) => `/request/${slug}`,
   requests: "/requests",

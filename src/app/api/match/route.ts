@@ -1,9 +1,10 @@
 import { configuredProvider } from "@/lib/finder/ai";
 import { todayInIndia } from "@/lib/finder/dates";
 import { findGifts } from "@/lib/finder/engine";
-import type { MatchRequest } from "@/lib/finder/types";
+import type { MatchRequest, Preference } from "@/lib/finder/types";
 
 const MAX_BRIEF = 600;
+const PREFERENCES: Preference[] = ["practical", "unusual", "experiences", "handmade"];
 
 /** POST /api/match — runs the Gift Finder pipeline (see lib/finder/engine.ts). */
 export async function POST(request: Request) {
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
       exclude: Array.isArray(body.exclude) ? body.exclude.filter((x): x is string => typeof x === "string") : [],
       budgetMax: typeof body.budgetMax === "number" ? body.budgetMax : undefined,
       mode: body.mode === "rules" ? "rules" : "auto",
+      prefer: PREFERENCES.find((p) => p === body.prefer),
     },
     { today: todayInIndia(), ai: configuredProvider() },
   );

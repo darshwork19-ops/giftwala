@@ -11,7 +11,8 @@ const EXAMPLES = [
   { label: "Studying for CA, loves badminton", brief: "My sister is studying for CA Final, loves badminton and cars" },
 ];
 
-export type FinderView = "buy" | "ideas";
+/** Which results to show first: everything, only things to buy, or only ideas. */
+export type FinderView = "all" | "buy" | "ideas";
 
 interface DescribeBoxProps {
   defaultValue?: string;
@@ -22,7 +23,7 @@ interface DescribeBoxProps {
  * The first step of the Gift Finder: one free-text description. Submits to
  * /gift-finder?brief=… so results can be shared, refreshed and revisited.
  */
-export function DescribeBox({ defaultValue = "", defaultView = "buy" }: DescribeBoxProps) {
+export function DescribeBox({ defaultValue = "", defaultView = "all" }: DescribeBoxProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hintId = useId();
 
@@ -65,6 +66,7 @@ export function DescribeBox({ defaultValue = "", defaultView = "buy" }: Describe
         <span className="mr-1 text-muted">Show me</span>
         {(
           [
+            { id: "all", label: "Everything" },
             { id: "buy", label: "Things I can buy" },
             { id: "ideas", label: "Gift ideas" },
           ] as const
