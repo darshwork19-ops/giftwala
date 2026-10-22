@@ -18,7 +18,7 @@ import type {
 } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
-import { TextTile } from "@/components/ui/text-tile";
+import { AiIllustration } from "@/components/ui/ai-illustration";
 import { ArrowRightIcon, PenIcon } from "@/components/ui/icons";
 import { DescribeBox, type FinderView } from "./describe-box";
 import { GiftQuiz } from "./gift-quiz";
@@ -538,7 +538,7 @@ function ExternalView({ product }: { product: ExternalCard }) {
               className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             />
           ) : (
-            <TextTile kicker={product.shop.name} title={product.category} />
+            <AiIllustration theme={product.illustration} />
           )}
         </div>
       </a>

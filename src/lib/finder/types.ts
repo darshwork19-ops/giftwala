@@ -1,3 +1,5 @@
+import type { IllustrationTheme } from "@/data/illustrations";
+
 /** Shapes shared by the /api/match route and the Gift Finder page. */
 
 export interface MatchRequest {
@@ -62,6 +64,8 @@ export interface ExternalCard {
   priceCheckedOn: string;
   /** Null until the shop's photo permission is confirmed (text-only card). */
   image: { src: string; alt: string } | null;
+  /** Drawn stand-in shown when `image` is null. */
+  illustration: IllustrationTheme;
   category: string;
   summary: string;
   reason: string;

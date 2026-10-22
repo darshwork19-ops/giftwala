@@ -2,7 +2,8 @@ import { getShop, type ExternalProduct } from "@/data/external-products";
 import { formatShortDate } from "@/lib/finder/dates";
 import { formatPrice } from "@/lib/format";
 import { GiftImage } from "@/components/ui/gift-image";
-import { TextTile } from "@/components/ui/text-tile";
+import { AiIllustration } from "@/components/ui/ai-illustration";
+import { illustrationFor } from "@/data/illustrations";
 
 /** A product sold on another shop's website; buying happens there. */
 export function ShopProductCard({ product, priority = false }: { product: ExternalProduct; priority?: boolean }) {
@@ -20,7 +21,7 @@ export function ShopProductCard({ product, priority = false }: { product: Extern
               className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             />
           ) : (
-            <TextTile kicker={shop.name} title={product.category} />
+            <AiIllustration theme={illustrationFor(product)} />
           )}
         </div>
       </a>

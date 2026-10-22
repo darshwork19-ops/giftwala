@@ -193,8 +193,10 @@ The hero and login image (`public/images/giftwala-bag.jpg`) is GIFTWALA's own im
   small independent brands' public Shopify feeds, checked 22 Oct 2026 (Dope Coffee, Corridor Seven, Tea Culture
   of the World, Kosha Yoga, Odd Giraffe, PawsIndia, Greenkin, Kreeda Games, Tramboo, Bums on the Saddle, GOKYO,
   Tripole, Trawoc, Claymen, Studio Coppre, MISA Candles). Big national brands are deliberately left out, and so are
-  products named by gender. None has confirmed photo use yet, so their cards are **text-only** (set a shop's
-  `photoPermission` to `"granted"` once it confirms). Shown at `/shops` and in Gift Finder results. Regenerate the
+  products named by gender, and corporate, employee or guest-gifting packs. None has confirmed photo use yet,
+  so their cards show a drawn **AI representation** of that kind of gift (`src/components/ui/ai-illustration.tsx`,
+  chosen by `src/data/illustrations.ts`), badged "AI representation" and never presented as the product. Set a
+  shop's `photoPermission` to `"granted"` once it confirms, and its real photos replace the illustration. Shown at `/shops` and in Gift Finder results. Regenerate the
   file from the feeds rather than hand-editing it.
 - **More makers**: 7 more Mumbai handles from the AI Hack list were re-checked on 22 Oct 2026; none met the
   engagement rule, so none were added.

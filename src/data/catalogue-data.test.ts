@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { externalProducts, getShop, shops } from "./external-products";
+import { illustrationFor } from "./illustrations";
 import { giftIdeas } from "./gift-ideas";
 import { makerProducts } from "./instagram-maker-products";
 import { instagramMakers } from "./instagram-makers";
@@ -40,6 +41,11 @@ describe("The Drunken Mug catalogue", () => {
   it("only shows photos for shops whose permission is confirmed", () => {
     expect(shops.find((s) => s.id === "drunken-mug")?.photoPermission).toBe("granted");
     expect(shops.filter((s) => s.id !== "drunken-mug").every((s) => s.photoPermission === "pending")).toBe(true);
+  });
+
+  it("every product without photo permission has a drawn illustration of its kind", () => {
+    const pending = externalProducts.filter((p) => getShop(p.shopId).photoPermission !== "granted");
+    expect(pending.every((p) => illustrationFor(p) !== "gift")).toBe(true);
   });
 
   it("small brands' prices are real and within the import range", () => {

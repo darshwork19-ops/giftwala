@@ -5,6 +5,7 @@ import { formatShortDate } from "./dates";
 import { SERVICE_AREA } from "./destination";
 import { classifyIntent, followUpFor, type IntentKind } from "./intent";
 import { getShop } from "@/data/external-products";
+import { illustrationFor } from "@/data/illustrations";
 import { instagramUrl } from "@/data/instagram-makers";
 import { routes } from "@/lib/routes";
 import { instagramPostUrl } from "@/data/instagram-maker-products";
@@ -120,6 +121,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
       compareAt: product.compareAt,
       priceCheckedOn: product.priceCheckedOn,
       image: shop.photoPermission === "granted" ? product.image : null,
+      illustration: illustrationFor(product),
       category: product.category,
       summary: product.summary,
       reason: `Matches “${matched.slice(0, 2).join("” and “")}” from your description.`,
