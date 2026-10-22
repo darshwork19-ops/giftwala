@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { GiftBoxBuilder } from "@/components/gift-box/gift-box-builder";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function GiftBoxPage() {
         every maker in the box delivers to the same area and show the earliest date the whole box can arrive.
       </p>
       <div className="mt-8">
-        <GiftBoxBuilder />
+        <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-linen/60" />}>
+          <GiftBoxBuilder />
+        </Suspense>
       </div>
     </div>
   );

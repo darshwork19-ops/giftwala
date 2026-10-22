@@ -17,4 +17,6 @@ export const routes = {
   requestGift: (slug: string) => `/request/${slug}`,
   requests: "/requests",
   requestStatus: (ref: string) => `/requests?ref=${encodeURIComponent(ref)}`,
+  login: "/login",
+  loginThen: (next: string) => `/login?next=${encodeURIComponent(next)}`,
 } as const;

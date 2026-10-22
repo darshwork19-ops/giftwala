@@ -7,7 +7,7 @@ import type { ImageLoaderProps } from "next/image";
  * asks for instead of proxying originals through the Next.js optimiser.
  * - Unsplash: sample photography for the demo catalogue.
  * - Shopify: shop photos for online-shop products.
- * Anything else (e.g. /public) is returned unchanged.
+ * - Files in /public are served as they are (the width only varies the URL).
  */
 export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
   const q = String(quality ?? 75);
@@ -18,5 +18,6 @@ export default function imageLoader({ src, width, quality }: ImageLoaderProps) {
   if (src.startsWith("https://cdn.shopify.com/")) {
     return `${src}${src.includes("?") ? "&" : "?"}width=${width}`;
   }
+  if (src.startsWith("/")) return `${src}?w=${width}`;
   return src;
 }

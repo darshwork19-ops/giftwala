@@ -99,3 +99,10 @@ export const ReceiptIcon = (p: IconProps) => (
     <path d="M9 8h6M9 12h6" />
   </Icon>
 );
+
+export const UserIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21a8 8 0 0 1 16 0" />
+  </Icon>
+);

@@ -168,3 +168,12 @@ Settings → Environment Variables). Both settings are optional.
 - Mumbai, Thane and Navi Mumbai only.
 - No external retailer, affiliate, price or stock integrations exist, so gift
   ideas have no prices or links.
+
+## Sign-in (demo)
+
+`/login` asks for name, email, mobile number and date of birth (anniversary optional). It is a **demo**: the
+profile is saved only in the browser's localStorage (`giftwala.profile.v1`), nothing is verified, and
+"Continue with Google" is shown as *coming soon*. Sign-in is asked for when someone adds a gift to a gift box
+or requests a gift; their name and number then pre-fill the request forms.
+
+The hero and login image (`public/images/giftwala-bag.jpg`) is GIFTWALA's own image, generated with Canva AI.

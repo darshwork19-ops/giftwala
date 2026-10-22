@@ -12,7 +12,9 @@ import {
   MenuIcon,
   ReceiptIcon,
   SearchIcon,
+  UserIcon,
 } from "@/components/ui/icons";
+import { useProfile } from "@/lib/profile";
 import { Wordmark } from "./wordmark";
 
 type Panel = "none" | "occasions" | "search" | "mobile";
@@ -24,6 +26,7 @@ const iconButton =
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const profile = useProfile();
   const [panel, setPanel] = useState<Panel>("none");
   const headerRef = useRef<HTMLElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -160,6 +163,16 @@ export function SiteHeader() {
           >
             <ReceiptIcon />
             <span className="sr-only">Your order requests</span>
+          </Link>
+          <Link href={routes.login} className={iconButton} aria-current={current(routes.login)}>
+            {profile ? (
+              <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-burgundy font-serif text-sm text-white">
+                {profile.name.charAt(0).toUpperCase()}
+              </span>
+            ) : (
+              <UserIcon />
+            )}
+            <span className="sr-only">{profile ? `Your account (${profile.name})` : "Sign in"}</span>
           </Link>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { unsplash } from "@/lib/images";
+import { giftwalaBag } from "@/lib/images";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
 import { HeroSearch } from "./hero-search";
@@ -37,10 +37,10 @@ export function Hero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-linen">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-berry">
             <GiftImage
-              src={unsplash("photo-1788713756143-fcfc915940f0")}
-              alt="A hand holding a small brown-paper parcel tied with twine and a red seal"
+              src={giftwalaBag.src}
+              alt={giftwalaBag.alt}
               sizes="(min-width: 1024px) 40vw, 90vw"
               preload
             />

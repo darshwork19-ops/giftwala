@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import { allAreaNames, findArea, zoneLabels } from "@/lib/finder/areas";
 import { addDays, addWorkingDays, formatShortDate, todayInIndia } from "@/lib/finder/dates";
 import { formatPrice } from "@/lib/format";
 import { newReference, saveOrderRequest, type OrderRequest } from "@/lib/order-requests";
+import { useProfile, type Profile } from "@/lib/profile";
 import { routes } from "@/lib/routes";
 import type { Maker, PersonalisationOption, Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,23 @@ const fieldClass =
 type Errors = Record<string, string>;
 type Chosen = { option: PersonalisationOption; value: string; extraCost: number };
 
+/** Requesting a gift needs a signed-in profile; signed-out visitors go to the login page first. */
 export function RequestForm({ product, maker }: { product: Product; maker: Maker }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const profile = useProfile();
+  const here = `${pathname}${params.size ? `?${params}` : ""}`;
+
+  useEffect(() => {
+    if (profile === null) router.replace(routes.loginThen(here));
+  }, [profile, router, here]);
+
+  if (!profile) return <div className="h-96 animate-pulse rounded-lg bg-linen/60" aria-label="Checking sign-in" />;
+  return <RequestFields product={product} maker={maker} profile={profile} />;
+}
+
+function RequestFields({ product, maker, profile }: { product: Product; maker: Maker; profile: Profile }) {
   const router = useRouter();
   const params = useSearchParams();
   // "Today" differs between build time and the visitor's day, so read it on the client only
@@ -35,8 +52,8 @@ export function RequestForm({ product, maker }: { product: Product; maker: Maker
     address: "",
     area: allAreaNames.find((a) => a === params.get("area")) ?? "",
     deliverBy: params.get("date") ?? "",
-    buyerName: "",
-    buyerPhone: "",
+    buyerName: profile.name,
+    buyerPhone: profile.phone,
   });
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);

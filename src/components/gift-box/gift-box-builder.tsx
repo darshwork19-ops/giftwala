@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { categories } from "@/data/taxonomy";
 import { getAllProducts, getMaker } from "@/lib/catalogue";
@@ -9,6 +9,7 @@ import { formatShortDate, todayInIndia } from "@/lib/finder/dates";
 import { formatPrice } from "@/lib/format";
 import { BOX_MAX, BOX_MIN, summariseBox } from "@/lib/gift-box";
 import { newReference, saveOrderRequest, type OrderRequest } from "@/lib/order-requests";
+import { useProfile } from "@/lib/profile";
 import { routes } from "@/lib/routes";
 import type { CategoryId } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,19 @@ const fieldClass =
   "w-full rounded-md border border-linen bg-white px-3 py-2.5 text-sm aria-[invalid=true]:border-berry focus:border-burgundy";
 
 export function GiftBoxBuilder() {
+  // A gift added before signing in comes back as ?add=<id>. Keyed so the box
+  // restarts with it even when Next.js restores this page's previous state.
+  const add = useSearchParams().get("add");
+  const initial = add && getAllProducts().some((p) => p.id === add) ? [add] : [];
+  return <Builder key={add ?? ""} initial={initial} />;
+}
+
+function Builder({ initial }: { initial: string[] }) {
   const router = useRouter();
+  const profile = useProfile();
   // "Today" differs between build time and the visitor's day, so read it on the client only
   const today = useSyncExternalStore(noopSubscribe, () => todayInIndia(), () => null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(initial);
   const [category, setCategory] = useState<CategoryId | "all">("all");
   const [step, setStep] = useState<"choose" | "details">("choose");
   const [details, setDetails] = useState({ recipientName: "", address: "", area: "", deliverBy: "", message: "", buyerName: "", buyerPhone: "" });
@@ -35,8 +45,14 @@ export function GiftBoxBuilder() {
   const shown = category === "all" ? all : all.filter((p) => p.category === category);
   const set = (key: keyof typeof details) => (value: string) => setDetails((d) => ({ ...d, [key]: value }));
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    // Adding the first gift needs a signed-in profile
+    if (profile === null && !selected.includes(id)) {
+      router.push(routes.loginThen(`${routes.giftBox}?add=${encodeURIComponent(id)}`));
+      return;
+    }
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= BOX_MAX ? prev : [...prev, id]));
+  };
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -220,7 +236,11 @@ export function GiftBoxBuilder() {
             <p className="mt-3 text-xs font-medium text-berry" role="status">{summary.problem}</p>
           )}
           {step === "choose" && (
-            <Button className="mt-5 w-full" disabled={Boolean(summary.problem)} onClick={() => setStep("details")}>
+            <Button className="mt-5 w-full" disabled={Boolean(summary.problem)} onClick={() => {
+                // Your name and number come from your profile; both stay editable
+                if (profile) setDetails((d) => ({ ...d, buyerName: d.buyerName || profile.name, buyerPhone: d.buyerPhone || profile.phone }));
+                setStep("details");
+              }}>
               Continue to delivery
             </Button>
           )}
