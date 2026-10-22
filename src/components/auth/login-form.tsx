@@ -9,11 +9,10 @@ import {
   googleSignInEnabled,
   safeNext,
   saveProfile,
-  sendEmailCode,
+  sendMagicLink,
   signInWithGoogle,
   signOut,
   useAuthState,
-  verifyEmailCode,
   type Profile,
 } from "@/lib/profile";
 import { ArrowRightIcon } from "@/components/ui/icons";
@@ -129,16 +128,10 @@ export function LoginForm() {
   );
 }
 
-const RESEND_SECONDS = 60;
-
-/** Google, or a one-time code sent by email (Supabase Auth). */
+/** Google, or a sign-in link by email (Supabase Auth). */
 function RealSignIn({ next }: { next: string }) {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
-  const [cooldown, setCooldown] = useState(0);
+  const [state, setState] = useState<{ kind: "idle" | "sending" | "sent" } | { kind: "error"; message: string }>({ kind: "idle" });
   // Only offer Google once it's switched on in Supabase, so the button never leads to an error page
   const [google, setGoogle] = useState(false);
   useEffect(() => {
@@ -148,110 +141,40 @@ function RealSignIn({ next }: { next: string }) {
       live = false;
     };
   }, []);
-  // Counts down until another code can be sent
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [cooldown]);
 
   async function startGoogle() {
-    setBusy(true);
-    const err = await signInWithGoogle(next);
-    if (err) {
-      setError(err);
-      setBusy(false);
-    }
+    setState({ kind: "sending" });
+    const error = await signInWithGoogle(next);
+    if (error) setState({ kind: "error", message: error });
   }
 
-  async function sendCode(e?: FormEvent) {
-    e?.preventDefault();
-    const address = email.trim().toLowerCase();
-    if (!EMAIL.test(address)) {
-      setError("Add a valid email address.");
-      return;
-    }
-    setBusy(true);
-    setError(undefined);
-    const err = await sendEmailCode(address);
-    setBusy(false);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setCode("");
-    setStep("code");
-    setCooldown(RESEND_SECONDS);
-    requestAnimationFrame(() => document.getElementById("login-code")?.focus());
-  }
-
-  async function checkCode(e: FormEvent) {
+  async function onEmail(e: FormEvent) {
     e.preventDefault();
-    const digits = code.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setError("Enter the code from the email.");
+    if (!EMAIL.test(email.trim())) {
+      setState({ kind: "error", message: "Add a valid email address." });
       return;
     }
-    setBusy(true);
-    setError(undefined);
-    const err = await verifyEmailCode(email.trim().toLowerCase(), digits);
-    // On success the sign-in state changes and this screen is replaced
-    if (err) {
-      setError(err);
-      setBusy(false);
-    }
+    setState({ kind: "sending" });
+    const error = await sendMagicLink(email.trim().toLowerCase(), next);
+    setState(error ? { kind: "error", message: error } : { kind: "sent" });
   }
 
-  if (step === "code") {
+  if (state.kind === "sent") {
     return (
-      <form onSubmit={checkCode} noValidate className="mt-8">
-        <p className="font-serif text-2xl">Enter your code</p>
+      <div className="mt-8 rounded-[1.25rem] border border-linen bg-white/70 p-6">
+        <p className="font-serif text-2xl">Check your inbox</p>
         <p className="mt-2 text-sm text-muted">
-          We emailed a sign-in code to <span className="text-charcoal">{email.trim()}</span>. It can take a minute; check
-          spam too.
+          We sent a sign-in link to <span className="text-charcoal">{email}</span>. Open it on this device to continue. It can
+          take a minute; check spam too.
         </p>
-        <label htmlFor="login-code" className="mt-6 mb-1.5 block pl-1 text-sm font-medium">Sign-in code</label>
-        <input
-          id="login-code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={10}
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="123456"
-          className={`${fieldClass} text-center font-mono text-xl tracking-[0.4em]`}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? "login-code-error" : undefined}
-        />
-        {error && <p id="login-code-error" role="alert" className="mt-1.5 pl-1 text-xs font-medium text-berry">{error}</p>}
-        <button type="submit" disabled={busy} className={`${primary} mt-4`}>
-          {busy ? "Checking…" : "Sign in"} <ArrowRightIcon width={16} height={16} />
+        <button type="button" onClick={() => setState({ kind: "idle" })} className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-burgundy">
+          Use a different email
         </button>
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <button
-            type="button"
-            disabled={busy || cooldown > 0}
-            onClick={() => void sendCode()}
-            className="text-muted underline underline-offset-4 hover:text-burgundy disabled:no-underline disabled:opacity-60"
-          >
-            {cooldown > 0 ? `Send a new code in ${cooldown}s` : "Send a new code"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep("email");
-              setError(undefined);
-            }}
-            className="text-muted underline underline-offset-4 hover:text-burgundy"
-          >
-            Use a different email
-          </button>
-        </div>
-      </form>
+      </div>
     );
   }
 
+  const busy = state.kind === "sending";
   return (
     <>
       {google && (
@@ -267,15 +190,16 @@ function RealSignIn({ next }: { next: string }) {
           </button>
           <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
             <span className="h-px flex-1 bg-linen" />
-            or sign in with a code by email
+            or get a sign-in link by email
             <span className="h-px flex-1 bg-linen" />
           </div>
         </>
       )}
-      <form onSubmit={sendCode} noValidate className={google ? "" : "mt-8"}>
-        <label htmlFor="login-email-code" className="mb-1.5 block pl-1 text-sm font-medium">Email address</label>
+      <div className={google ? "" : "mt-8"} />
+      <form onSubmit={onEmail} noValidate>
+        <label htmlFor="login-email-link" className="mb-1.5 block pl-1 text-sm font-medium">Email address</label>
         <input
-          id="login-email-code"
+          id="login-email-link"
           type="email"
           inputMode="email"
           autoComplete="email"
@@ -283,11 +207,11 @@ function RealSignIn({ next }: { next: string }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           className={fieldClass}
-          aria-invalid={Boolean(error)}
+          aria-invalid={state.kind === "error"}
         />
-        {error && <p role="alert" className="mt-1.5 pl-1 text-xs font-medium text-berry">{error}</p>}
+        {state.kind === "error" && <p role="alert" className="mt-1.5 pl-1 text-xs font-medium text-berry">{state.message}</p>}
         <button type="submit" disabled={busy} className={`${primary} mt-4`}>
-          {busy ? "Sending…" : "Email me a code"} <ArrowRightIcon width={16} height={16} />
+          {busy ? "Sending…" : "Email me a sign-in link"} <ArrowRightIcon width={16} height={16} />
         </button>
       </form>
       <p className="mt-4 text-xs text-muted">New here? You&apos;ll add your name, mobile and birthday after signing in.</p>

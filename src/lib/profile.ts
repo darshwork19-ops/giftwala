@@ -219,29 +219,17 @@ export async function signInWithGoogle(next: string): Promise<string | undefined
   return error ? "We couldn't start Google sign-in. Please try again." : undefined;
 }
 
-/**
- * Emails a one-time sign-in code. Supabase sends a code (not a link) when the
- * project's "Magic Link" and "Confirm signup" email templates use {{ .Token }}.
- */
-export async function sendEmailCode(email: string): Promise<string | undefined> {
+export async function sendMagicLink(email: string, next: string): Promise<string | undefined> {
   const supabase = getSupabase();
   if (!supabase) return "Email sign-in isn't set up yet.";
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${window.location.origin}/login?next=${encodeURIComponent(next)}` },
+  });
   if (!error) return undefined;
   return error.status === 429
-    ? "Too many codes requested. Please wait a minute and try again."
-    : "We couldn't send the code. Please check the email address and try again.";
-}
-
-/** Checks the code from the email; on success the shopper is signed in. */
-export async function verifyEmailCode(email: string, code: string): Promise<string | undefined> {
-  const supabase = getSupabase();
-  if (!supabase) return "Email sign-in isn't set up yet.";
-  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
-  if (!error) return undefined;
-  return error.status === 429
-    ? "Too many tries. Please wait a minute and try again."
-    : "That code is wrong or has expired. Check the latest email, or send a new code.";
+    ? "Too many emails sent. Please wait a minute and try again."
+    : "We couldn't send the sign-in email. Please check the address and try again.";
 }
 
 export async function signOut() {
