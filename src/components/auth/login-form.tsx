@@ -208,7 +208,7 @@ function RealSignIn({ next }: { next: string }) {
         <p className="font-serif text-2xl">Enter your code</p>
         <p className="mt-2 text-sm text-muted">
           We emailed a sign-in code to <span className="text-charcoal">{email.trim()}</span>. It can take a minute; check
-          spam too. If the email has a sign-in link instead of a code, just open the link on this device.
+          spam too.
         </p>
         <label htmlFor="login-code" className="mt-6 mb-1.5 block pl-1 text-sm font-medium">Sign-in code</label>
         <input
