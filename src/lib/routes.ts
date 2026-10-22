@@ -11,6 +11,7 @@ export const routes = {
   makers: "/makers",
   maker: (slug: string) => `/makers/${slug}`,
   drunkenMug: "/shops/the-drunken-mug",
+  shops: "/shops",
   studio: (handle: string) => `/studios/${encodeURIComponent(handle)}`,
   giftFinder: "/gift-finder",
   giftFinderFor: (brief: string, view?: "all" | "buy" | "ideas") =>

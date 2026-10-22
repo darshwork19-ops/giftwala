@@ -189,6 +189,13 @@ The hero and login image (`public/images/giftwala-bag.jpg`) is GIFTWALA's own im
   `/makers`, Discover and Gift Finder results link there.
 - **The Drunken Mug** (`src/data/drunken-mug-catalogue.ts`): all 86 in-stock products from the shop's public
   product feed, shown at `/shops/the-drunken-mug`, on the homepage and on Discover. Liquor-branded pieces are 18+.
+- **Small Indian brands** (`src/data/local-brands-catalogue.ts`): 160 in-stock products, up to 10 each, from 16
+  small independent brands' public Shopify feeds, checked 22 Oct 2026 (Dope Coffee, Corridor Seven, Tea Culture
+  of the World, Kosha Yoga, Odd Giraffe, PawsIndia, Greenkin, Kreeda Games, Tramboo, Bums on the Saddle, GOKYO,
+  Tripole, Trawoc, Claymen, Studio Coppre, MISA Candles). Big national brands are deliberately left out, and so are
+  products named by gender. None has confirmed photo use yet, so their cards are **text-only** (set a shop's
+  `photoPermission` to `"granted"` once it confirms). Shown at `/shops` and in Gift Finder results. Regenerate the
+  file from the feeds rather than hand-editing it.
 - **More makers**: 7 more Mumbai handles from the AI Hack list were re-checked on 22 Oct 2026; none met the
   engagement rule, so none were added.
 
@@ -214,7 +221,7 @@ the order on the server, opening the gateway's checkout and verifying its signat
 The Gift Finder now builds one ranked shortlist of up to 15 results from every source
 (`src/lib/finder/shortlist.ts`):
 
-- **Sources:** GIFTWALA catalogue listings (AI-ranked when Gemini is set), The Drunken Mug products,
+- **Sources:** GIFTWALA catalogue listings (AI-ranked when Gemini is set), products from The Drunken Mug and 16 small brands,
   individual products from verified Mumbai makers, and labelled gift ideas (`src/data/gift-ideas.ts`, 87 ideas
   tagged by kind: equipment, experience, learning, collectible, consumable, keepsake, lifestyle).
 - **Diversity:** every brief word gets its best item first; then a light MMR penalty; at most 2 items per

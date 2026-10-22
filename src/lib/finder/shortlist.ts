@@ -8,7 +8,8 @@ import type { ResultGroup, ResultKind, ResultRef, Preference } from "./types";
  *
  * Diversity, in order:
  *   1. Coverage: each brief word that anything matched ("cricket",
- *      "travelling") gets its best item before any word gets a second.
+ *      "travelling") gets its best buyable item and its best idea before
+ *      any word gets more.
  *   2. Variety caps: at most 2 items per cluster (same kind of thing, e.g.
  *      two glassware pieces from one shop, or two maker products from one
  *      maker), and per-source caps so one source can't fill the list.
@@ -19,7 +20,7 @@ import type { ResultGroup, ResultKind, ResultRef, Preference } from "./types";
 export const MAX_RESULTS = 15;
 export const TARGET_RESULTS = 10;
 const PER_CLUSTER = 2;
-const PER_KIND: Record<ResultKind, number> = { listing: 8, external: 3, "maker-product": 4, idea: 12 };
+const PER_KIND: Record<ResultKind, number> = { listing: 8, external: 6, "maker-product": 4, idea: 12 };
 
 export interface Pooled {
   kind: ResultKind;
@@ -37,7 +38,8 @@ export interface Pooled {
   handmade?: boolean;
 }
 
-const KIND_BONUS: Record<ResultKind, number> = { listing: 4, "maker-product": 3, external: 2, idea: 0 };
+// Something real to buy beats an idea of equal relevance
+const KIND_BONUS: Record<ResultKind, number> = { listing: 4, external: 4, "maker-product": 3, idea: 0 };
 
 /** Preference nudges, applied on top of relevance (they re-rank, never add). */
 function preferenceBonus(item: Pooled, prefer?: Preference): number {
@@ -59,7 +61,15 @@ function total(item: Pooled, prefer?: Preference): number {
   return item.score + KIND_BONUS[item.kind] + (item.deliverable ? 2 : 0) + preferenceBonus(item, prefer);
 }
 
-const words = (s: string) => new Set(s.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2));
+// Bracketed parts are variants ("Drip Bags (August Rush)"), so they don't count
+const words = (s: string) =>
+  new Set(
+    s
+      .toLowerCase()
+      .replace(/\(.*?\)/g, " ")
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 2),
+  );
 
 /** Two names that share most of their words are treated as the same gift. */
 function nearDuplicate(a: string, b: string): boolean {
@@ -87,13 +97,16 @@ export function buildShortlist(pool: Pooled[], prefer?: Preference, limit = MAX_
     perKind.set(item.kind, (perKind.get(item.kind) ?? 0) + 1);
   };
 
-  // 1. Coverage: the best item for each matched word, in order of how often words match
+  // 1. Coverage: for each matched word, its best real thing to buy, then its
+  //    best idea, so every interest has something purchasable where one exists
   const allWords = [...new Set(ranked.flatMap((i) => i.matched))];
-  for (const word of allWords) {
-    if (chosen.length >= limit) break;
-    if (chosen.some((c) => c.matched.includes(word))) continue;
-    const best = ranked.find((i) => i.matched.includes(word) && fits(i));
-    if (best) take(best);
+  for (const buyable of [true, false]) {
+    for (const word of allWords) {
+      if (chosen.length >= limit) break;
+      if (chosen.some((c) => c.matched.includes(word) && (c.kind !== "idea") === buyable)) continue;
+      const best = ranked.find((i) => i.matched.includes(word) && (i.kind !== "idea") === buyable && fits(i));
+      if (best) take(best);
+    }
   }
   // 2. Fill by score, respecting the variety caps. Each pick is penalised by
   //    how often its words are already represented (a light MMR), so three

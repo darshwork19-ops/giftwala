@@ -39,6 +39,9 @@ export function tagTerms(product: Pick<Product, "tags">): Set<string> {
   return terms;
 }
 
+/** The stemmed words of a name. */
+const stems = (name: string) => new Set(name.toLowerCase().split(/[^a-z]+/).filter(Boolean).map(stem));
+
 /** Every subject word the catalogue or the ideas list can respond to. */
 export const KNOWN_SUBJECTS: Set<string> = new Set([
   ...getAllProducts().flatMap((p) => [...tagTerms(p)]),
@@ -242,14 +245,17 @@ export interface ExternalMatch {
  * Liquor-branded barware needs a drink-related word in the brief and is never
  * suggested when the recipient sounds under 18.
  */
-export function matchExternal(facts: BriefFacts, briefText: string, limit = 8): ExternalMatch[] {
+export function matchExternal(facts: BriefFacts, briefText: string, limit = 16): ExternalMatch[] {
   const minor = (facts.age !== undefined && facts.age < 18) || CHILD_WORDS.test(briefText.toLowerCase());
   const ranked = externalProducts
     .map((product) => {
       const terms = tagTerms(product);
       const hits = facts.keywords.filter((w) => terms.has(stem(w)));
       const matched = hits.filter((w) => !hits.some((o) => o !== w && o.includes("-") && o.split("-").includes(w)));
-      let score = matched.length * 5;
+      // Same scale as ideas and listings, plus a bump when the product is
+      // named for the thing ("Hard Tennis Bat" for "bat"), not just tagged
+      const named = stems(product.name);
+      let score = matched.length * 10 + (matched.some((w) => named.has(stem(w))) ? 3 : 0);
       if (facts.occasion && product.occasions.includes(facts.occasion)) score += 2;
       return { product, matched, score };
     })
@@ -260,7 +266,8 @@ export function matchExternal(facts: BriefFacts, briefText: string, limit = 8): 
       if (product.adultsOnly && (minor || !matched.some((w) => DRINK_WORDS.has(stem(w))))) return false;
       return true;
     })
-    .sort((a, b) => b.score - a.score || a.product.price - b.product.price);
+    // On a tie, the more substantial piece (a bat over a grip cone)
+    .sort((a, b) => b.score - a.score || b.product.price - a.product.price);
   return coverEach(ranked, limit);
 }
 

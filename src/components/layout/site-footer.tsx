@@ -24,7 +24,10 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
   },
   {
     title: "Makers",
-    links: [{ href: routes.makers, label: "Meet the Makers" }],
+    links: [
+      { href: routes.makers, label: "Meet the Makers" },
+      { href: routes.shops, label: "Small Indian brands" },
+    ],
   },
 ];
 

@@ -60,7 +60,8 @@ export interface ExternalCard {
   price: number;
   compareAt?: number;
   priceCheckedOn: string;
-  image: { src: string; alt: string };
+  /** Null until the shop's photo permission is confirmed (text-only card). */
+  image: { src: string; alt: string } | null;
   category: string;
   summary: string;
   reason: string;

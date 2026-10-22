@@ -14,11 +14,19 @@
  */
 import type { InterestId, OccasionId } from "@/lib/types";
 import { drunkenMugCatalogue } from "./drunken-mug-catalogue";
+import { localBrandProducts, localBrandShops } from "./local-brands-catalogue";
 
 export interface Shop {
   id: string;
   name: string;
   url: string;
+  /** City, when the shop says where it's based. */
+  city?: string;
+  /**
+   * Whether the site owner has confirmed the shop's product photos may be
+   * shown. Until then the cards are text-only: name, price, date, link.
+   */
+  photoPermission: "granted" | "pending";
 }
 
 export interface ExternalProduct {
@@ -42,7 +50,8 @@ export interface ExternalProduct {
 }
 
 export const shops: Shop[] = [
-  { id: "drunken-mug", name: "The Drunken Mug", url: "https://www.thedrunkenmug.in" },
+  { id: "drunken-mug", name: "The Drunken Mug", url: "https://www.thedrunkenmug.in", photoPermission: "granted" },
+  ...localBrandShops,
 ];
 
 const CHECKED = "2026-10-22";
@@ -218,7 +227,7 @@ const handPicked: ExternalProduct[] = [
 
 ];
 
-export const externalProducts: ExternalProduct[] = [...handPicked, ...drunkenMugCatalogue];
+export const externalProducts: ExternalProduct[] = [...handPicked, ...drunkenMugCatalogue, ...localBrandProducts];
 
 export function getShop(id: string): Shop {
   const shop = shops.find((s) => s.id === id);

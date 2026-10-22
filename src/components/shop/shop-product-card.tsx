@@ -2,6 +2,7 @@ import { getShop, type ExternalProduct } from "@/data/external-products";
 import { formatShortDate } from "@/lib/finder/dates";
 import { formatPrice } from "@/lib/format";
 import { GiftImage } from "@/components/ui/gift-image";
+import { TextTile } from "@/components/ui/text-tile";
 
 /** A product sold on another shop's website; buying happens there. */
 export function ShopProductCard({ product, priority = false }: { product: ExternalProduct; priority?: boolean }) {
@@ -10,13 +11,17 @@ export function ShopProductCard({ product, priority = false }: { product: Extern
     <article className="group flex h-full flex-col">
       <a href={product.url} target="_blank" rel="noopener noreferrer" className="block">
         <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-linen bg-white">
-          <GiftImage
-            src={product.image.src}
-            alt={product.image.alt}
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-            preload={priority}
-            className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-          />
+          {shop.photoPermission === "granted" ? (
+            <GiftImage
+              src={product.image.src}
+              alt={product.image.alt}
+              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+              preload={priority}
+              className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            />
+          ) : (
+            <TextTile kicker={shop.name} title={product.category} />
+          )}
         </div>
       </a>
       <div className="flex flex-1 flex-col pt-3">

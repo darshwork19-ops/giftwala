@@ -259,10 +259,11 @@ describe("parsing", () => {
 });
 
 describe("online-shop products", () => {
-  it("only The Drunken Mug remains as an online shop", async () => {
-    const { externalProducts } = await import("@/data/external-products");
+  it("every online-shop product belongs to a known shop", async () => {
+    const { externalProducts, shops } = await import("@/data/external-products");
+    const ids = new Set(shops.map((s) => s.id));
     expect(externalProducts.length).toBeGreaterThan(0);
-    expect(externalProducts.every((p) => p.shopId === "drunken-mug")).toBe(true);
+    expect(externalProducts.every((p) => ids.has(p.shopId))).toBe(true);
   });
 
   it("liquor-branded barware needs a drink-related brief", async () => {
@@ -379,10 +380,11 @@ describe("Mumbai makers on Instagram", () => {
     expect((await run("a chocolate hamper for my friend in Delhi")).makers).toHaveLength(0);
   });
 
-  it("cricket shows no makers or shop products, only ideas", async () => {
+  it("cricket shows real cricket gear from a small brand, plus ideas, and no unrelated makers", async () => {
     const r = await run("cricket bat");
     expect(r.makers).toHaveLength(0);
-    expect(r.external).toHaveLength(0);
+    expect(r.external.length).toBeGreaterThan(0);
+    expect(r.external.every((e) => /cricket|bat|pad|helmet|kit|ball/i.test(`${e.name} ${e.category}`))).toBe(true);
     expect(r.ideas.length).toBeGreaterThan(0);
   });
 });

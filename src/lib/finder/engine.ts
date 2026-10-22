@@ -119,7 +119,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
       price: product.price,
       compareAt: product.compareAt,
       priceCheckedOn: product.priceCheckedOn,
-      image: product.image,
+      image: shop.photoPermission === "granted" ? product.image : null,
       category: product.category,
       summary: product.summary,
       reason: `Matches “${matched.slice(0, 2).join("” and “")}” from your description.`,
@@ -224,7 +224,7 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     })),
     ...external.map((card): Pooled => {
       const m = externalMatches.get(card.id)!;
-      return { kind: "external", id: card.id, score: m.score, matched: m.matched, cluster: `external:${m.product.shopId}:${card.category}`, name: card.name, form: "product" };
+      return { kind: "external", id: card.id, score: m.score, matched: m.matched, cluster: `external:${m.product.shopId}`, name: card.name, form: "product" };
     }),
     ...makerProductMatches.map(({ product, matched, score }): Pooled => ({
       kind: "maker-product",

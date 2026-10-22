@@ -45,7 +45,7 @@ export default function GiftsPage({ searchParams }: PageProps<"/gifts">) {
 /** Real products from Mumbai Instagram makers and The Drunken Mug, beyond the demo catalogue. */
 function MoreToExplore() {
   const makerPicks = studioShowcase(8);
-  const shopPicks = externalProducts.filter((p) => !p.adultsOnly).slice(0, 4);
+  const shopPicks = externalProducts.filter((p) => p.shopId === "drunken-mug" && !p.adultsOnly).slice(0, 4);
   const link =
     "inline-flex items-center gap-1.5 text-sm font-medium text-charcoal underline decoration-linen underline-offset-4 hover:text-burgundy hover:decoration-burgundy";
   return (
@@ -74,7 +74,10 @@ function MoreToExplore() {
             <h2 id="discover-tdm" className="font-serif text-3xl tracking-tight sm:text-4xl">From The Drunken Mug</h2>
             <p className="mt-3 text-sm text-muted">Upcycled bottle glassware, sold on their own site.</p>
           </div>
-          <Link href={routes.drunkenMug} className={link}>See the whole shop →</Link>
+          <div className="flex gap-5">
+            <Link href={routes.drunkenMug} className={link}>See the whole shop →</Link>
+            <Link href={routes.shops} className={link}>Small Indian brands →</Link>
+          </div>
         </div>
         <ul className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
           {shopPicks.map((p) => (

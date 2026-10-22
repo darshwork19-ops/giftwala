@@ -18,6 +18,7 @@ import type {
 } from "@/lib/finder/types";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
+import { TextTile } from "@/components/ui/text-tile";
 import { ArrowRightIcon, PenIcon } from "@/components/ui/icons";
 import { DescribeBox, type FinderView } from "./describe-box";
 import { GiftQuiz } from "./gift-quiz";
@@ -529,12 +530,16 @@ function ExternalView({ product }: { product: ExternalCard }) {
     <article className="flex h-full flex-col">
       <a href={product.url} target="_blank" rel="noopener noreferrer" className="group block">
         <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-linen bg-white">
-          <GiftImage
-            src={product.image.src}
-            alt={product.image.alt}
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-          />
+          {product.image ? (
+            <GiftImage
+              src={product.image.src}
+              alt={product.image.alt}
+              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+              className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            />
+          ) : (
+            <TextTile kicker={product.shop.name} title={product.category} />
+          )}
         </div>
       </a>
       <div className="flex flex-1 flex-col pt-4">
