@@ -10,6 +10,7 @@ import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
 import { ArrowRightIcon, PenIcon, SparkIcon } from "@/components/ui/icons";
 import { DescribeBox, type FinderView } from "./describe-box";
+import { GiftQuiz } from "./gift-quiz";
 
 type Refinement = "others" | "cheaper" | "handmade" | "unusual";
 
@@ -51,6 +52,8 @@ function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result>();
   const [editing, setEditing] = useState(false);
+  // Editing an existing description opens the text box; a fresh start opens the picker
+  const [typing, setTyping] = useState(false);
 
   const request: MatchRequest = useMemo(
     () => ({ brief: [brief, ...refine.clauses].join(" "), exclude: refine.exclude, budgetMax: refine.budgetMax, mode }),
@@ -80,7 +83,18 @@ function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
   if (!brief || editing) {
     return (
       <div>
-        <DescribeBox defaultValue={brief} defaultView={view} />
+        {typing ? (
+          <>
+            <DescribeBox defaultValue={brief} defaultView={view} />
+            <button type="button" onClick={() => setTyping(false)} className={`mt-4 ${textLink} text-muted`}>
+              ← Back to picking options
+            </button>
+          </>
+        ) : (
+          <div className="max-w-2xl">
+            <GiftQuiz onTypeInstead={() => setTyping(true)} />
+          </div>
+        )}
         {editing && (
           <button type="button" onClick={() => setEditing(false)} className={`mt-6 ${textLink} text-muted`}>
             Cancel
@@ -140,7 +154,10 @@ function FinderSession({ brief, view }: { brief: string; view: FinderView }) {
             brief={brief}
             view={view}
             onViewChange={setView}
-            onEdit={() => setEditing(true)}
+            onEdit={() => {
+              setEditing(true);
+              setTyping(false);
+            }}
             onRetry={() => setAttempt((a) => a + 1)}
             onUseRules={() => setMode("rules")}
             onRefine={applyRefinement}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { heroImage } from "@/lib/hero-image";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
-import { HeroSearch } from "./hero-search";
+import { HeroFinder } from "./hero-finder";
 
 export function Hero() {
   const image = heroImage();
@@ -20,10 +20,10 @@ export function Hero() {
             <span className="text-burgundy italic">Find the gift that feels like them.</span>
           </h1>
           <p className="mt-6 max-w-md text-lg text-muted">
-            Tell us what makes them different. We&apos;ll help you find a gift that fits.
+            Tap through six quick questions about them. We&apos;ll find gifts that fit.
           </p>
 
-          <HeroSearch />
+          <HeroFinder />
 
           <p className="mt-6 text-sm text-muted">
             Or{" "}
