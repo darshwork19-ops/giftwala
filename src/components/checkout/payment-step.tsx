@@ -72,7 +72,8 @@ function SimulatedGateway({ cart, draft }: { cart: CartSummary; draft: Required<
       payment: { method, simulated: true, transactionId: simulatedTransactionId(), paidAt: now },
       status: "paid",
     };
-    saveOrder(order);
+    // Wait for the account copy, so it's saved before this page navigates away
+    await saveOrder(order);
     // Optional hand-off to an order workflow (n8n); a no-op unless configured
     fetch("/api/order-request", {
       method: "POST",

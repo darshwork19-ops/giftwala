@@ -41,26 +41,42 @@ const orders = createLocalStore<Order[]>("giftwala.orders.v1", [], isOrders);
 
 export const useOrders = orders.useValue;
 
-export function saveOrder(order: Order) {
+const toRow = (order: Order) => ({ ref: order.ref, total: order.total, status: order.status, data: order });
+
+/**
+ * Saves the order in this browser and, when signed in to an account, in the
+ * `orders` table. Resolves once the account copy is saved (or has failed).
+ */
+export async function saveOrder(order: Order): Promise<void> {
   orders.update((list) => [order, ...list.filter((o) => o.ref !== order.ref)]);
   const supabase = getSupabase();
-  if (supabase) {
-    // user_id defaults to the signed-in user; Row Level Security checks it
-    void supabase.from("orders").insert({ ref: order.ref, total: order.total, status: order.status, data: order });
-  }
+  if (!supabase) return;
+  // A Supabase query only runs when it's awaited. user_id defaults to the
+  // signed-in user and Row Level Security checks it.
+  const { error } = await supabase.from("orders").insert(toRow(order));
+  if (error && error.code !== "23505") console.error("Couldn't save the order to your account:", error.message);
 }
 
-/** Pulls the signed-in shopper's orders from their account into this browser. */
+/**
+ * Syncs the signed-in shopper's orders both ways: orders from the account
+ * come into this browser, and orders this browser has that the account
+ * doesn't (e.g. placed while offline) are uploaded.
+ */
 export async function syncOrdersFromAccount() {
   const supabase = getSupabase();
   if (!supabase) return;
   const { data, error } = await supabase.from("orders").select("data").order("created_at", { ascending: false }).limit(100);
   if (error || !data) return;
   const remote = data.map((r) => r.data as Order).filter((o) => o && typeof o.ref === "string");
-  orders.update((local) => {
-    const refs = new Set(remote.map((o) => o.ref));
-    return [...remote, ...local.filter((o) => !refs.has(o.ref))].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  });
+  const remoteRefs = new Set(remote.map((o) => o.ref));
+  const missing = orders.read().filter((o) => !remoteRefs.has(o.ref));
+  if (missing.length) {
+    const { error: uploadError } = await supabase.from("orders").upsert(missing.map(toRow), { onConflict: "ref", ignoreDuplicates: true });
+    if (uploadError) console.error("Couldn't upload orders to your account:", uploadError.message);
+  }
+  orders.update((local) =>
+    [...remote, ...local.filter((o) => !remoteRefs.has(o.ref))].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+  );
 }
 
 /** Forgets this browser's copy of orders (on sign-out, so the next person doesn't see them). */
