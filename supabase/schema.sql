@@ -53,3 +53,10 @@ create policy "Create own orders" on public.orders
   for insert with check ((select auth.uid()) = user_id);
 
 -- Orders can't be edited or deleted from the site (no update/delete policies).
+
+-- Table access for signed-in users only (needed when "Automatically expose new
+-- tables" is off). The public anon role gets nothing; RLS above still limits
+-- signed-in users to their own rows.
+revoke all on public.profiles, public.orders from anon;
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert on public.orders to authenticated;
