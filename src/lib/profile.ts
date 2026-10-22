@@ -195,6 +195,20 @@ export async function saveCheckoutToAccount(checkout: unknown) {
   state = { ...state, checkout };
 }
 
+/** Whether Google sign-in is switched on in the Supabase project (Auth → Providers). */
+export async function googleSignInEnabled(): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return false;
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } });
+    const settings = (await res.json()) as { external?: { google?: boolean } };
+    return Boolean(settings.external?.google);
+  } catch {
+    return false;
+  }
+}
+
 export async function signInWithGoogle(next: string): Promise<string | undefined> {
   const supabase = getSupabase();
   if (!supabase) return "Google sign-in isn't set up yet.";

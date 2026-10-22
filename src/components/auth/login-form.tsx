@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { todayInIndia } from "@/lib/finder/dates";
 import {
   authMode,
+  googleSignInEnabled,
   safeNext,
   saveProfile,
   sendMagicLink,
@@ -131,8 +132,17 @@ export function LoginForm() {
 function RealSignIn({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<{ kind: "idle" | "sending" | "sent" } | { kind: "error"; message: string }>({ kind: "idle" });
+  // Only offer Google once it's switched on in Supabase, so the button never leads to an error page
+  const [google, setGoogle] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void googleSignInEnabled().then((on) => live && setGoogle(on));
+    return () => {
+      live = false;
+    };
+  }, []);
 
-  async function google() {
+  async function startGoogle() {
     setState({ kind: "sending" });
     const error = await signInWithGoogle(next);
     if (error) setState({ kind: "error", message: error });
@@ -167,20 +177,25 @@ function RealSignIn({ next }: { next: string }) {
   const busy = state.kind === "sending";
   return (
     <>
-      <button
-        type="button"
-        onClick={google}
-        disabled={busy}
-        className="mt-8 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-charcoal/15 bg-white text-sm font-medium transition-colors hover:border-burgundy disabled:opacity-60"
-      >
-        <span aria-hidden="true" className="font-serif text-lg text-burgundy">G</span>
-        Continue with Google
-      </button>
-      <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
-        <span className="h-px flex-1 bg-linen" />
-        or get a sign-in link by email
-        <span className="h-px flex-1 bg-linen" />
-      </div>
+      {google && (
+        <>
+          <button
+            type="button"
+            onClick={startGoogle}
+            disabled={busy}
+            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-charcoal/15 bg-white text-sm font-medium transition-colors hover:border-burgundy disabled:opacity-60"
+          >
+            <span aria-hidden="true" className="font-serif text-lg text-burgundy">G</span>
+            Continue with Google
+          </button>
+          <div className="my-6 flex items-center gap-4 text-xs text-muted" aria-hidden="true">
+            <span className="h-px flex-1 bg-linen" />
+            or get a sign-in link by email
+            <span className="h-px flex-1 bg-linen" />
+          </div>
+        </>
+      )}
+      <div className={google ? "" : "mt-8"} />
       <form onSubmit={onEmail} noValidate>
         <label htmlFor="login-email-link" className="mb-1.5 block pl-1 text-sm font-medium">Email address</label>
         <input
