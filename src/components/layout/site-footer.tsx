@@ -11,7 +11,8 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
       { href: routes.gifts, label: "All gifts" },
       { href: routes.giftBox, label: "Build a gift box" },
       { href: routes.personalisedGifts, label: "Personalised gifts" },
-      { href: routes.requests, label: "Your order requests" },
+      { href: routes.cart, label: "Your cart" },
+      { href: routes.orders, label: "Your orders" },
     ],
   },
   {

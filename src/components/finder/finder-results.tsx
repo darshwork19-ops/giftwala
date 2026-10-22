@@ -678,11 +678,11 @@ function ListingView({
         <div className="mt-auto pt-5">
           {compact ? (
             <Link href={requestHref} className={textLink}>
-              Request this gift <ArrowRightIcon width={15} height={15} />
+              Add to cart <ArrowRightIcon width={15} height={15} />
             </Link>
           ) : (
             <Link href={requestHref} className={`${primaryPill} h-10`}>
-              Request this gift <ArrowRightIcon width={15} height={15} />
+              Add to cart <ArrowRightIcon width={15} height={15} />
             </Link>
           )}
         </div>

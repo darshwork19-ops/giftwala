@@ -15,7 +15,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/request/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const product = getProductBySlug(slug);
-  return { title: product ? `Request ${product.name}` : "Gift not found" };
+  return { title: product ? `Personalise ${product.name}` : "Gift not found" };
 }
 
 export default function RequestPage({ params }: PageProps<"/request/[slug]">) {
@@ -52,10 +52,10 @@ async function RequestContent({ params }: Pick<PageProps<"/request/[slug]">, "pa
           <p className="mt-2 text-sm text-muted">{formatProcessing(product.processingDays)} by the maker.</p>
         </aside>
         <div>
-          <p className="eyebrow mb-3">Order request</p>
+          <p className="mb-3 text-sm tracking-wide text-muted">Personalise and add to cart</p>
           <p className="mb-8 max-w-xl text-muted">
-            Fill this in once and we&apos;ll turn it into a clear order message for {maker.name}. You send it, they
-            confirm. {maker.name} is a sample maker for this demo.
+            Choose how {maker.name} should make it. You&apos;ll add the delivery address and date at checkout.{" "}
+            {maker.name} is a sample maker for this demo.
           </p>
           <Suspense>
             <RequestForm product={product} maker={maker} />

@@ -146,7 +146,7 @@ async function ProductDetails({ params }: Pick<PageProps<"/gifts/[slug]">, "para
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <ButtonLink href={routes.requestGift(product.slug)} size="lg">
-                Request this gift
+                {product.personalisation.length > 0 ? "Personalise and add to cart" : "Add to cart"}
               </ButtonLink>
               <p className="text-sm text-muted">
                 Delivers to {maker.deliveryZones.map((z) => zoneLabels[z]).join(", ")}.

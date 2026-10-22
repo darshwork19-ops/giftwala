@@ -191,3 +191,20 @@ The hero and login image (`public/images/giftwala-bag.jpg`) is GIFTWALA's own im
   product feed, shown at `/shops/the-drunken-mug`, on the homepage and on Discover. Liquor-branded pieces are 18+.
 - **More makers**: 7 more Mumbai handles from the AI Hack list were re-checked on 22 Oct 2026; none met the
   engagement rule, so none were added.
+
+## Cart, checkout and payment (demo)
+
+Personalise a gift (`/request/<slug>`) or build a gift box, then **Add to cart** (sign-in required). From `/cart`:
+
+1. **Address** (`/checkout`): your contact details (pre-filled from your profile), the delivery address (Mumbai,
+   Thane or Navi Mumbai only, checked against every maker in the cart; Mumbai PIN required), an arrive-by date no
+   earlier than the slowest item, and a billing address (same as delivery, or any Indian address).
+2. **Review** (`/checkout/review`): every gift, address, date and the returns rule; tick to confirm.
+3. **Payment** (`/checkout/pay`): a **simulated** gateway (UPI / card / netbanking) with success and failure
+   buttons. It asks for no payment details and moves no money; references start with `SIM-`.
+4. **Confirmation** (`/orders?ref=GWO-…`): the order, both addresses and the simulated payment. `/orders` lists them.
+
+Cart, saved addresses and orders live in this browser's localStorage (`giftwala.cart.v1`, `giftwala.checkout.v1`,
+`giftwala.orders.v1`). Paid orders are also sent to `ORDER_WEBHOOK_URL` when it's set. Pricing and delivery rules are
+in `src/lib/checkout.ts` (tested in `checkout.test.ts`). Swapping in a real gateway (e.g. Razorpay) means creating
+the order on the server, opening the gateway's checkout and verifying its signature server-side before saving.

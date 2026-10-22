@@ -20,5 +20,11 @@ export const routes = {
   requests: "/requests",
   requestStatus: (ref: string) => `/requests?ref=${encodeURIComponent(ref)}`,
   login: "/login",
+  cart: "/cart",
+  checkout: "/checkout",
+  checkoutReview: "/checkout/review",
+  checkoutPay: "/checkout/pay",
+  orders: "/orders",
+  order: (ref: string) => `/orders?ref=${encodeURIComponent(ref)}`,
   loginThen: (next: string) => `/login?next=${encodeURIComponent(next)}`,
 } as const;

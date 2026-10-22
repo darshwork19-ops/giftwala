@@ -1,6 +1,7 @@
 /**
- * Optional hand-off of an order request to an automation workflow (for
- * example an n8n webhook that emails the maker and logs the order).
+ * Optional hand-off of an order request, or a (demo) paid order, to an
+ * automation workflow (for example an n8n webhook that emails the maker and
+ * logs the order).
  * Does nothing unless ORDER_WEBHOOK_URL is set on the server.
  */
 export async function POST(request: Request) {
@@ -14,7 +15,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
   const r = body as Record<string, unknown>;
-  if (typeof r?.ref !== "string" || typeof r?.productId !== "string") {
+  const isRequest = typeof r?.productId === "string";
+  const isOrder = r?.type === "order" && Array.isArray(r?.lines);
+  if (typeof r?.ref !== "string" || !(isRequest || isOrder)) {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 

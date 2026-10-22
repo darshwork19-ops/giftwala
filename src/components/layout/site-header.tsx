@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { occasions } from "@/data/taxonomy";
 import { routes } from "@/lib/routes";
 import {
+  BagIcon,
   ChevronDownIcon,
   CloseIcon,
   MenuIcon,
@@ -14,6 +15,7 @@ import {
   SearchIcon,
   UserIcon,
 } from "@/components/ui/icons";
+import { useCart } from "@/lib/cart";
 import { useProfile } from "@/lib/profile";
 import { Wordmark } from "./wordmark";
 
@@ -27,6 +29,7 @@ const iconButton =
 export function SiteHeader() {
   const pathname = usePathname();
   const profile = useProfile();
+  const cartCount = (useCart() ?? []).reduce((sum, l) => sum + l.quantity, 0);
   const [panel, setPanel] = useState<Panel>("none");
   const headerRef = useRef<HTMLElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -157,12 +160,21 @@ export function SiteHeader() {
             <span className="sr-only">Search gifts</span>
           </button>
           <Link
-            href={routes.requests}
+            href={routes.orders}
             className={iconButton}
-            aria-current={current(routes.requests)}
+            aria-current={current(routes.orders)}
           >
             <ReceiptIcon />
-            <span className="sr-only">Your order requests</span>
+            <span className="sr-only">Your orders</span>
+          </Link>
+          <Link href={routes.cart} className={`${iconButton} relative`} aria-current={current(routes.cart)}>
+            <BagIcon />
+            {cartCount > 0 && (
+              <span aria-hidden="true" className="absolute top-1 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-burgundy px-1 text-[0.65rem] font-medium text-white">
+                {cartCount}
+              </span>
+            )}
+            <span className="sr-only">{cartCount > 0 ? `Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}` : "Cart, empty"}</span>
           </Link>
           <Link href={routes.login} className={iconButton} aria-current={current(routes.login)}>
             {profile ? (
@@ -220,7 +232,8 @@ export function SiteHeader() {
               { href: routes.gifts, label: "Discover all gifts" },
               { href: routes.giftBox, label: "Mix and match a gift box" },
               { href: routes.makers, label: "Meet the Makers" },
-              { href: routes.requests, label: "Your order requests" },
+              { href: routes.cart, label: "Your cart" },
+              { href: routes.orders, label: "Your orders" },
             ].map((item) => (
               <li key={item.href}>
                 <Link
