@@ -1,8 +1,9 @@
 /**
  * PRODUCTS FROM ONLINE SHOPS — real listings on other websites.
  *
- * Currently The Drunken Mug (upcycled bottle glassware), collected by hand from
- * its public website on 21 Oct 2026. Names, prices and links come from the
+ * Currently The Drunken Mug (upcycled bottle glassware): ten hand-picked items
+ * here, and the rest of its in-stock catalogue in `drunken-mug-catalogue.ts`,
+ * all re-checked against its public product feed on 22 Oct 2026. Names, prices and links come from the
  * shop; prices change, so the UI always shows the "checked on" date and sends
  * shoppers to the shop to buy. GIFTWALA has no partnership, feed or checkout
  * with the shop: stock, delivery, payment and returns are handled by the shop.
@@ -12,6 +13,7 @@
  * adult recipients.
  */
 import type { InterestId, OccasionId } from "@/lib/types";
+import { drunkenMugCatalogue } from "./drunken-mug-catalogue";
 
 export interface Shop {
   id: string;
@@ -43,11 +45,11 @@ export const shops: Shop[] = [
   { id: "drunken-mug", name: "The Drunken Mug", url: "https://www.thedrunkenmug.in" },
 ];
 
-const CHECKED = "2026-10-21";
+const CHECKED = "2026-10-22";
 const tdm = (file: string) => `https://cdn.shopify.com/s/files/1/0695/1298/6683/files/${file}`;
 const BAR: string[] = ["barware", "bar", "drinks", "drink", "glassware", "glass", "upcycled", "sustainable", "eco"];
 
-export const externalProducts: ExternalProduct[] = [
+const handPicked: ExternalProduct[] = [
   // ── The Drunken Mug · upcycled bottle glassware ────────────────────────
   {
     id: "x-tdm-old-monk-mug",
@@ -55,7 +57,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/original-old-monk-upcycled-glass-mug-600ml",
     price: 479,
-    compareAt: 600,
     priceCheckedOn: CHECKED,
     image: { src: tdm("fix_img.png?v=1789456503"), alt: "The Original Old Monk upcycled glass mug" },
     category: "Barware",
@@ -71,7 +72,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/old-monk-glass-600-ml-5",
     price: 599,
-    compareAt: 750,
     priceCheckedOn: CHECKED,
     image: { src: tdm("Old_Monk_Face_Glass_600Ml_Set_Of_2.jpg?v=1789455300"), alt: "Two Old Monk face glasses" },
     category: "Barware",
@@ -87,7 +87,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/jameson-glass-350-ml-3",
     price: 839,
-    compareAt: 1050,
     priceCheckedOn: CHECKED,
     image: { src: tdm("Jameson_Glass_Set_Of_4.jpg?v=1789454868"), alt: "Four glasses cut from Jameson bottles" },
     category: "Barware",
@@ -103,7 +102,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/bottle-glass-250-ml",
     price: 1919,
-    compareAt: 2400,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("Upcycled_Green_Bottle_Slim_Glasses_Set_of_6_-_250_ML_-_Made_from_Heineken_Bottles.jpg?v=1789455884"),
@@ -122,7 +120,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/j-germeister-bottle-platter-30cm",
     price: 599,
-    compareAt: 750,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("Upcycled_Jagermeister_Green_Bottle_Platter_with_Cork_-_550_ML_-_9.5_Inches.jpg?v=1789454120"),
@@ -141,7 +138,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/ballantine-s-bottle-serving-jug-1l",
     price: 599,
-    compareAt: 750,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("Upcycled_Ballantine_s_Bottle_Serving_Jug_Amber_Glass_-_With_Handle.jpg?v=1789454135"),
@@ -160,7 +156,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/glass-jug-free-size",
     price: 839,
-    compareAt: 1050,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("Upcycled_Green_Glass_Jug_with_Handcrafted_Marble_Cork_Stopper.jpg?v=1789455651"),
@@ -178,7 +173,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/glass-stirrer-8inches",
     price: 1319,
-    compareAt: 1650,
     priceCheckedOn: CHECKED,
     image: { src: tdm("Glass_Straw_with_Citrus_Charm_-_Set_of_6.jpg?v=1789455822"), alt: "Six glass straws with small citrus charms" },
     category: "Home & table",
@@ -193,7 +187,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/diet-coke-sipper",
     price: 549,
-    compareAt: 690,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("80942bcf-581e-49f2-afcb-00bca53fa275_5073b926-97d1-4680-b63d-5ae9cb8891d5.jpg?v=1790243713"),
@@ -211,7 +204,6 @@ export const externalProducts: ExternalProduct[] = [
     shopId: "drunken-mug",
     url: "https://www.thedrunkenmug.in/products/artisan-glass-toothpick-free-size",
     price: 479,
-    compareAt: 600,
     priceCheckedOn: CHECKED,
     image: {
       src: tdm("Artisan_Glass_Toothpick_Holder_with_Cork_Base_Set_of_2.jpg?v=1789455396"),
@@ -225,6 +217,8 @@ export const externalProducts: ExternalProduct[] = [
   },
 
 ];
+
+export const externalProducts: ExternalProduct[] = [...handPicked, ...drunkenMugCatalogue];
 
 export function getShop(id: string): Shop {
   const shop = shops.find((s) => s.id === id);

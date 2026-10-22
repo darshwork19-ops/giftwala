@@ -69,7 +69,12 @@ export interface MakerCard {
   id: string;
   name: string;
   handle: string;
+  /** Their Instagram profile. */
   url: string;
+  /** Their page on GIFTWALA, with the products they show on Instagram. */
+  studioUrl: string;
+  /** Up to three product photos, when the maker's photos may be shown. */
+  preview: { src: string; alt: string }[];
   makes: string;
   followers: number;
   medianLikes: number | null;

@@ -10,6 +10,8 @@ export const routes = {
   product: (slug: string) => `/gifts/${slug}`,
   makers: "/makers",
   maker: (slug: string) => `/makers/${slug}`,
+  drunkenMug: "/shops/the-drunken-mug",
+  studio: (handle: string) => `/studios/${encodeURIComponent(handle)}`,
   giftFinder: "/gift-finder",
   giftFinderFor: (brief: string, view?: "buy" | "ideas") =>
     `/gift-finder?brief=${encodeURIComponent(brief)}${view ? `&view=${view}` : ""}`,

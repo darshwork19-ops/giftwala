@@ -1,5 +1,6 @@
 import { externalProducts, type ExternalProduct } from "@/data/external-products";
 import { giftIdeas, type GiftIdea } from "@/data/gift-ideas";
+import { makerProducts } from "@/data/instagram-maker-products";
 import { instagramMakers, type InstagramMaker } from "@/data/instagram-makers";
 import { interests as interestList, occasions } from "@/data/taxonomy";
 import { getAllProducts, getMaker, isPersonalisable } from "@/lib/catalogue";
@@ -44,6 +45,7 @@ export const KNOWN_SUBJECTS: Set<string> = new Set([
   ...giftIdeas.flatMap((i) => i.triggers.map(stem)),
   ...externalProducts.flatMap((p) => [...tagTerms(p)]),
   ...instagramMakers.flatMap((m) => [...tagTerms(m)]),
+  ...makerProducts.flatMap((p) => [...tagTerms(p)]),
 ]);
 
 export type ExclusionReason = "budget" | "date" | "destination";
@@ -281,7 +283,8 @@ export function matchInstagramMakers(facts: BriefFacts, limit = 6): MakerMatch[]
   if (facts.destination?.kind === "outside") return []; // Mumbai-only makers
   const ranked = instagramMakers
     .map((maker) => {
-      const terms = tagTerms(maker);
+      // A maker matches on what they say they make and on the products they show
+      const terms = tagTerms({ tags: [...maker.tags, ...makerProducts.filter((p) => p.makerId === maker.id).flatMap((p) => p.tags)] });
       const hits = facts.keywords.filter((w) => terms.has(stem(w)));
       const matched = hits.filter((w) => !hits.some((o) => o !== w && o.includes("-") && o.split("-").includes(w)));
       const interestHits = facts.interests.filter((i) => maker.interests.includes(i));

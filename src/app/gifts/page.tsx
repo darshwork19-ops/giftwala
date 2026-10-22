@@ -17,6 +17,10 @@ import {
 } from "@/lib/search";
 import { GiftFiltersForm } from "@/components/catalogue/gift-filters";
 import { ProductCard } from "@/components/product/product-card";
+import { ShopProductCard } from "@/components/shop/shop-product-card";
+import { MakerProductCard } from "@/components/studio/maker-product-card";
+import { externalProducts } from "@/data/external-products";
+import { studioShowcase } from "@/lib/studios";
 import { ButtonLink } from "@/components/ui/button";
 import { CloseIcon } from "@/components/ui/icons";
 
@@ -33,7 +37,54 @@ export default function GiftsPage({ searchParams }: PageProps<"/gifts">) {
       <Suspense fallback={<CatalogueSkeleton />}>
         <Catalogue searchParams={searchParams} />
       </Suspense>
+      <MoreToExplore />
     </div>
+  );
+}
+
+/** Real products from Mumbai Instagram makers and The Drunken Mug, beyond the demo catalogue. */
+function MoreToExplore() {
+  const makerPicks = studioShowcase(8);
+  const shopPicks = externalProducts.filter((p) => !p.adultsOnly).slice(0, 4);
+  const link =
+    "inline-flex items-center gap-1.5 text-sm font-medium text-charcoal underline decoration-linen underline-offset-4 hover:text-burgundy hover:decoration-burgundy";
+  return (
+    <>
+      <section aria-labelledby="discover-makers" className="mt-20 border-t border-linen pt-14">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <h2 id="discover-makers" className="font-serif text-3xl tracking-tight sm:text-4xl">From Mumbai makers</h2>
+            <p className="mt-3 text-sm text-muted">
+              Real studios that sell on Instagram. No listed prices: message them to order.
+            </p>
+          </div>
+          <Link href={routes.makers} className={link}>All Mumbai makers →</Link>
+        </div>
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
+          {makerPicks.map((p) => (
+            <li key={p.id}>
+              <MakerProductCard product={p} maker={p.maker} showPhoto showMaker />
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="discover-tdm" className="mt-20 border-t border-linen pt-14">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <h2 id="discover-tdm" className="font-serif text-3xl tracking-tight sm:text-4xl">From The Drunken Mug</h2>
+            <p className="mt-3 text-sm text-muted">Upcycled bottle glassware, sold on their own site.</p>
+          </div>
+          <Link href={routes.drunkenMug} className={link}>See the whole shop →</Link>
+        </div>
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
+          {shopPicks.map((p) => (
+            <li key={p.id}>
+              <ShopProductCard product={p} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
   );
 }
 

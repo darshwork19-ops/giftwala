@@ -6,6 +6,8 @@ import { SERVICE_AREA } from "./destination";
 import { classifyIntent, followUpFor, type IntentKind } from "./intent";
 import { getShop } from "@/data/external-products";
 import { instagramUrl } from "@/data/instagram-makers";
+import { routes } from "@/lib/routes";
+import { getStudioProducts } from "@/lib/studios";
 import {
   describeExclusions,
   filterAndScore,
@@ -119,6 +121,11 @@ export async function findGifts(request: MatchRequest, deps: FinderDeps): Promis
     name: maker.name,
     handle: maker.handle,
     url: instagramUrl(maker.handle),
+    studioUrl: routes.studio(maker.handle),
+    preview: getStudioProducts(maker.id)
+      .filter((p) => p.showPhoto)
+      .slice(0, 3)
+      .map((p) => p.image),
     makes: maker.makes,
     followers: maker.followers,
     medianLikes: maker.medianLikes,

@@ -13,7 +13,9 @@
  * These makers sell by Instagram DM: there are no listed prices, stock or
  * delivery data, so the UI never shows a price or delivery promise for them.
  * Descriptions are GIFTWALA's own summaries of what each account offers; no
- * photos, personal names or phone numbers are stored.
+ * personal names or phone numbers are stored. Product photos from their posts
+ * live in `instagram-maker-products.ts`; `photoPermission` records whether the
+ * maker has agreed to GIFTWALA showing them ("pending" until confirmed).
  */
 import type { InterestId, OccasionId } from "@/lib/types";
 
@@ -31,6 +33,7 @@ export interface InstagramMaker {
   tags: string[];
   interests: InterestId[];
   occasions: OccasionId[];
+  photoPermission: "pending" | "granted";
 }
 
 const CHECKED = "2026-10-21";
@@ -50,6 +53,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: ["art", "artwork", "portrait", "sketch", "pencil", "drawing", "illustration", "photo frame", "frame", "photos", "custom", "personalised", "memories"],
     interests: ["art-handmade", "keepsakes", "personalised"],
     occasions: ["birthday", "anniversary", "wedding", "just-because"],
+    photoPermission: "pending",
   },
   {
     id: "ig-junior-crew",
@@ -63,6 +67,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "handmade", "keepsake", "keepsakes", "shell", "small gifts", "return gifts"],
     interests: ["keepsakes", "art-handmade", "personalised"],
     occasions: ["birthday", "just-because", "thank-you"],
+    photoPermission: "pending",
   },
   {
     id: "ig-crumbles-by-anokhi",
@@ -76,6 +81,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...BAKE, "eggless", "cookies", "cookie", "doughnuts", "donuts", "chocolate", "baking"],
     interests: ["food-coffee"],
     occasions: ["birthday", "thank-you", "just-because"],
+    photoPermission: "pending",
   },
   {
     id: "ig-sugarsins",
@@ -89,6 +95,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...BAKE, "birthday cake", "celebration", "baking"],
     interests: ["food-coffee"],
     occasions: ["birthday", "anniversary", "just-because"],
+    photoPermission: "pending",
   },
   {
     id: "ig-scribble-along",
@@ -102,6 +109,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "luxury", "packaging", "wedding hamper", "bespoke"],
     interests: ["personalised"],
     occasions: ["wedding", "festivals", "birthday", "anniversary"],
+    photoPermission: "pending",
   },
   {
     id: "ig-sweet-surprise",
@@ -115,6 +123,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...BAKE, "waffle", "waffles", "chocolate", "chocolates", "baby", "baby announcement", "new baby"],
     interests: ["food-coffee"],
     occasions: ["birthday", "just-because", "thank-you"],
+    photoPermission: "pending",
   },
   {
     id: "ig-twinkling-crafts",
@@ -128,6 +137,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "favours", "wedding favours", "diwali", "festive", "craft", "crafts"],
     interests: ["personalised", "art-handmade"],
     occasions: ["wedding", "festivals", "birthday"],
+    photoPermission: "pending",
   },
   {
     id: "ig-decor-designs-by-tash",
@@ -141,6 +151,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "balloons", "balloon", "bouquet", "flowers", "floral", "trousseau", "diwali"],
     interests: ["plants-nature"],
     occasions: ["birthday", "wedding", "anniversary", "festivals"],
+    photoPermission: "pending",
   },
   {
     id: "ig-tck",
@@ -154,6 +165,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: ["chocolate", "chocolates", "artisanal", "hamper", "hampers", "diwali", "festive", "baby announcement", "sweet", "treat"],
     interests: ["food-coffee"],
     occasions: ["festivals", "birthday", "thank-you", "wedding"],
+    photoPermission: "pending",
   },
   {
     id: "ig-craft-auras",
@@ -167,6 +179,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "return favours", "favours", "made to order"],
     interests: ["personalised"],
     occasions: ["birthday", "wedding", "just-because"],
+    photoPermission: "pending",
   },
   {
     id: "ig-parva-creations",
@@ -180,6 +193,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "ring platter", "engagement", "baby", "baby hamper", "trousseau", "wedding"],
     interests: ["personalised"],
     occasions: ["wedding", "birthday", "festivals"],
+    photoPermission: "pending",
   },
   {
     id: "ig-chunks-of-heaven",
@@ -193,6 +207,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: [...HAMPER, "balloons", "balloon", "flowers", "floral", "party", "diwali"],
     interests: ["plants-nature"],
     occasions: ["birthday", "festivals", "anniversary"],
+    photoPermission: "pending",
   },
   {
     id: "ig-bombay-board",
@@ -206,6 +221,7 @@ export const instagramMakers: InstagramMaker[] = [
     tags: ["cheese", "charcuterie", "grazing", "platter", "board", "food", "foodie", "gourmet", "party", "host", "snacks"],
     interests: ["food-coffee"],
     occasions: ["festivals", "birthday", "thank-you", "anniversary"],
+    photoPermission: "pending",
   },
 ];
 

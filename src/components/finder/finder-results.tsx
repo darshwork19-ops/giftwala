@@ -450,8 +450,21 @@ function MakerView({ maker, budgetMax }: { maker: MakerCard; budgetMax?: number 
       : `~${Math.round(maker.medianLikes)} likes, ~${Math.round(maker.avgComments)} comments per post`;
   return (
     <article className="flex h-full flex-col p-6">
+      {maker.preview.length > 0 && (
+        <Link href={maker.studioUrl} className="mb-5 grid grid-cols-3 gap-1.5" tabIndex={-1} aria-hidden="true">
+          {maker.preview.map((img) => (
+            <span key={img.src} className="relative aspect-square overflow-hidden rounded-md bg-linen">
+              <GiftImage src={img.src} alt="" sizes="120px" />
+            </span>
+          ))}
+        </Link>
+      )}
       <p className="text-xs text-muted">Instagram maker · Mumbai</p>
-      <h3 className="mt-2 font-serif text-2xl leading-snug">{maker.name}</h3>
+      <h3 className="mt-2 font-serif text-2xl leading-snug">
+        <Link href={maker.studioUrl} className="hover:text-burgundy">
+          {maker.name}
+        </Link>
+      </h3>
       <p className="mt-0.5 truncate text-sm text-burgundy">@{maker.handle}</p>
       <p className="mt-4 text-sm">{maker.makes}</p>
       <p className="mt-2 text-sm text-muted">{maker.reason}</p>
@@ -466,9 +479,14 @@ function MakerView({ maker, budgetMax }: { maker: MakerCard; budgetMax?: number 
           Delivery isn&apos;t checked by GIFTWALA.
         </p>
       </div>
-      <a href={maker.url} target="_blank" rel="noopener noreferrer" className={`mt-5 self-start ${textLink}`}>
-        Message on Instagram ↗
-      </a>
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <Link href={maker.studioUrl} className={textLink}>
+          See their gifts <ArrowRightIcon width={15} height={15} />
+        </Link>
+        <a href={maker.url} target="_blank" rel="noopener noreferrer" className={`${textLink} text-muted`}>
+          Instagram ↗
+        </a>
+      </div>
     </article>
   );
 }

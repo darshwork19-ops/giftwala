@@ -177,3 +177,17 @@ profile is saved only in the browser's localStorage (`giftwala.profile.v1`), not
 or requests a gift; their name and number then pre-fill the request forms.
 
 The hero and login image (`public/images/giftwala-bag.jpg`) is GIFTWALA's own image, generated with Canva AI.
+
+## Mumbai makers' products and The Drunken Mug catalogue
+
+- **Maker products** (`src/data/instagram-maker-products.ts`): 58 products from the 13 verified Mumbai Instagram
+  makers, taken from their recent posts on 22 Oct 2026 (Apify post scraper + the public post embed). Names and
+  summaries are GIFTWALA's; there are no prices ("price on request"). Photos are in `public/images/makers/` and are
+  credited with a link to the original post. Each maker's `photoPermission` is `"pending"` until they confirm;
+  set `SHOW_PENDING_PHOTOS = false` to hide unconfirmed photos everywhere.
+- **Maker pages**: `/studios/<handle>` lists a maker's products, with "Visit their Instagram" below. The homepage,
+  `/makers`, Discover and Gift Finder results link there.
+- **The Drunken Mug** (`src/data/drunken-mug-catalogue.ts`): all 86 in-stock products from the shop's public
+  product feed, shown at `/shops/the-drunken-mug`, on the homepage and on Discover. Liquor-branded pieces are 18+.
+- **More makers**: 7 more Mumbai handles from the AI Hack list were re-checked on 22 Oct 2026; none met the
+  engagement rule, so none were added.
