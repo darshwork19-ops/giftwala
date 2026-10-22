@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { giftwalaBag } from "@/lib/images";
+import { heroImage } from "@/lib/hero-image";
 import { routes } from "@/lib/routes";
 import { GiftImage } from "@/components/ui/gift-image";
 import { HeroSearch } from "./hero-search";
 
 export function Hero() {
+  const image = heroImage();
   return (
     <section aria-labelledby="hero-title" className="page-container pt-12 pb-16 sm:pt-16 lg:pt-20 lg:pb-24">
       <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
@@ -39,8 +40,8 @@ export function Hero() {
         <div className="relative mx-auto w-full max-w-md lg:max-w-none">
           <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem] bg-berry">
             <GiftImage
-              src={giftwalaBag.src}
-              alt={giftwalaBag.alt}
+              src={image.src}
+              alt={image.alt}
               sizes="(min-width: 1024px) 40vw, 90vw"
               preload
             />
